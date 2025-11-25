@@ -425,10 +425,10 @@ export default function Home() {
     handleNodeSelect(null);
     setActionsSidebarOpen(false);
     setSelectedFlowName(null);
-    toast({
-      title: 'Canvas Cleared',
-      description: 'You can now create a new workflow.',
-    });
+    // toast({
+    //   title: 'Canvas Cleared',
+    //   description: 'You can now create a new workflow.',
+    // });
   };
 
   const handleNodeIdUpdate = (oldId: string, newId: string) => {

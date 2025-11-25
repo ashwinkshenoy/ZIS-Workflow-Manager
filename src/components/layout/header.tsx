@@ -134,10 +134,6 @@ export function AppHeader({
       }
 
       onWorkflowUpdate(newWorkflow);
-      toast({
-        title: 'Integration Loaded',
-        description: `Successfully loaded "${integrationName}".`,
-      });
     } catch (error) {
       if (error instanceof Error) {
         toast({

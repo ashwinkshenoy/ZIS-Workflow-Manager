@@ -232,10 +232,9 @@ export function EditWorkflowDialog({
         <SheetDescription>Update the workflow details and jobspec information.</SheetDescription>
       </SheetHeader>
       <Separator />
-      {selectedFlow}
       <ScrollArea className='flex-1 -mx-6 px-6'>
         <form onSubmit={handleSubmit}>
-          <div className='space-y-6 py-6'>
+          <div className='space-y-6 pb-6'>
             <div className='space-y-2'>
               <h4 className='font-medium text-foreground'>JobSpec Details</h4>
               <div className='space-y-4 rounded-md border p-4'>
@@ -301,7 +300,8 @@ export function EditWorkflowDialog({
           <div className='rounded-md border border-red-300 p-4'>
             <h4 className='font-bold text-foreground'>Danger Zone</h4>
             <p className='text-sm text-muted-foreground mt-1'>
-              Manage the installation status of this ZIS integration.
+              Manage the installation status of ZIS integration:&nbsp;
+              <span className='font-semibold text-foreground'>{selectedFlow}</span>.
               <br />
               Uninstalling will remove the integration from your Zendesk instance.
             </p>
