@@ -1,0 +1,951 @@
+{
+  "description": "ETG Desccription",
+  "name": "sandbox_ashwin_22",
+  "zis_template_version": "2019-10-14",
+  "resources": {
+    "etg_retrieve_conversation_id": {
+      "type": "ZIS::JobSpec",
+      "properties": {
+        "name": "etg_retrieve_conversation_id",
+        "event_source": "support",
+        "event_type": "ticket.TicketCreated",
+        "flow_name": "zis:sandbox_ashwin_22:flow:etg_retrieve_conversation_id_flow"
+      }
+    },
+
+    "etg_genesys_integration": {
+      "type": "ZIS::JobSpec",
+      "properties": {
+        "name": "etg_genesys_integration",
+        "event_source": "support",
+        "event_type": "ticket.TagsChanged",
+        "flow_name": "zis:sandbox_ashwin_22:flow:etg_genesys_integration_flow"
+      }
+    },
+
+    "push_agent_status_to_job_spec": {
+      "type": "ZIS::JobSpec",
+      "properties": {
+        "name": "push_agent_status_to_genesys",
+        "event_source": "{{jobspec_etg_event_source}}",
+        "event_type": "{{jobspec_etg_event_type}}",
+        "flow_name": "zis:sandbox_ashwin_22:flow:push_agent_status_to_genesys_flow"
+      }
+    },
+
+    "etg_retrieve_conversation_id_flow": {
+      "type": "ZIS::Flow",
+      "properties": {
+        "name": "etg_retrieve_conversation_id_flow",
+        "definition": {
+          "StartAt": "001.ZIS.LoadConfig",
+          "States": {
+            "001.ZIS.LoadConfig": {
+              "Comment": "Load ZIS settings from config",
+              "Type": "Action",
+              "ActionName": "zis:common:action:LoadConfig",
+              "Parameters": {
+                "scope": "{{zis_integration_key}}_settings"
+              },
+              "ResultPath": "$.config",
+              "Next": "002.Choice.CheckIfChannelIsMessaging"
+            },
+            "002.Choice.CheckIfChannelIsMessaging": {
+              "Type": "Choice",
+              "Comment": "Check if channel is messaging",
+              "Choices": [
+                {
+                  "Variable": "$.input.ticket_event.ticket.via.channel",
+                  "StringEquals": "native_messaging",
+                  "Next": "003.Zendesk.GetTicketAudits"
+                }
+              ],
+              "Default": "010.EndFlow.ChannelNotMessaging"
+            },
+            "003.Zendesk.GetTicketAudits": {
+              "Type": "Action",
+              "Comment": "Get zendesk ticket audits api",
+              "ActionName": "zis:{{zis_integration_key}}:action:zendesk.get_ticket_audits",
+              "Parameters": {
+                "ticketId.$": "{{$.input.ticket_event.ticket.id}}"
+              },
+              "ResultPath": "$.ticket_audits",
+              "Next": "004.Transform.GetConversationIdFromAudits"
+            },
+            "004.Transform.GetConversationIdFromAudits": {
+              "Type": "Action",
+              "Comment": "Set null if conversation id not is present else the value",
+              "ActionName": "zis:common:transform:Jq",
+              "Parameters": {
+                "expr": "[(.ticket_audits.audits[] | .events[] | select(.type == \"ChatStartedEvent\") | if (.value.conversation_id == null or .value.conversation_id == \"\") then null else .value.conversation_id end)][0] // null",
+                "data.$": "$"
+              },
+              "ResultPath": "$.conversation_id",
+              "Next": "005.Choice.CheckIfConversationIdWasFound"
+            },
+            "005.Choice.CheckIfConversationIdWasFound": {
+              "Type": "Choice",
+              "Comment": "Check if conversation id is present",
+              "Choices": [
+                {
+                  "Variable": "$.conversation_id",
+                  "IsPresent": true,
+                  "Next": "006.Transform.CreateUpdateTicketPayload"
+                }
+              ],
+              "Default": "009.EndFlow.NoConversationIdFound"
+            },
+            "006.Transform.CreateUpdateTicketPayload": {
+              "Type": "Action",
+              "Comment": "Create zendesk ticket update payload to update conversation id custom field",
+              "ActionName": "zis:common:transform:Jq",
+              "Parameters": {
+                "expr": "{\"ticket\": {\"custom_fields\": [{\"id\": .config.conversation_id_ticket_field_id,\"value\": .conversation_id }]}}",
+                "data.$": "$"
+              },
+              "ResultPath": "$.payload",
+              "Next": "007.Zendesk.UpdateTicketField"
+            },
+            "007.Zendesk.UpdateTicketField": {
+              "Type": "Action",
+              "Comment": "Update zendesk ticket",
+              "ActionName": "zis:{{zis_integration_key}}:action:zendesk.update_ticket",
+              "Parameters": {
+                "ticketId.$": "$.input.ticket_event.ticket.id",
+                "payload.$": "$.payload"
+              },
+              "ResultPath": "$.ticket_response",
+              "Next": "008.Success.EndFlow"
+            },
+            "008.Success.EndFlow": {
+              "Type": "Succeed",
+              "Message": "ZIS Executed || #{{$.input.ticket_event.ticket.id}} || Conversation ID ({{$.conversation_id}}) updated successfully"
+            },
+            "009.EndFlow.NoConversationIdFound": {
+              "Type": "Succeed",
+              "Message": "ZIS Executed || #{{$.input.ticket_event.ticket.id}} || No conversation ID found"
+            },
+            "010.EndFlow.ChannelNotMessaging": {
+              "Type": "Succeed",
+              "Message": "ZIS Executed || #{{$.input.ticket_event.ticket.id}} || Channel is not messaging"
+            }
+          }
+        }
+      }
+    },
+
+    "{{jobspec_etg}}_flow": {
+      "type": "ZIS::Flow",
+      "properties": {
+        "name": "{{jobspec_etg}}_flow",
+        "definition": {
+          "StartAt": "001.Transform.CheckNewTagPresent",
+          "States": {
+            "001.Transform.CheckNewTagPresent": {
+              "Type": "Action",
+              "ActionName": "zis:common:transform:Jq",
+              "Comment": "Check if new tags are present",
+              "Parameters": {
+                "expr": "if (.input.ticket_event.tags_added | length ) > 0 then \"true\" else \"false\" end ",
+                "data.$": "$"
+              },
+              "ResultPath": "$.is_new_tags_added",
+              "Next": "002.Choice.CheckNewTags"
+            },
+            "002.Choice.CheckNewTags": {
+              "Type": "Choice",
+              "Comment": "Check if there are any new tags, if not end the flow.",
+              "Choices": [
+                {
+                  "Variable": "$.is_new_tags_added",
+                  "StringEquals": "true",
+                  "Next": "003.ZIS.LoadConfig"
+                }
+              ],
+              "Default": "DoneWithoutUpdate"
+            },
+            "003.ZIS.LoadConfig": {
+              "Comment": "Load ZIS settings from config",
+              "Type": "Action",
+              "ActionName": "zis:common:action:LoadConfig",
+              "Parameters": {
+                "scope": "{{zis_integration_key}}_settings"
+              },
+              "ResultPath": "$.config",
+              "Next": "004.Transform.CheckFireTagsPresent"
+            },
+            "004.Transform.CheckFireTagsPresent": {
+              "Type": "Action",
+              "ActionName": "zis:common:transform:Jq",
+              "Comment": "Check if added tags contains any tag that fire the routing in configuration",
+              "Parameters": {
+                "expr": "[.input.ticket_event.tags_added[] == .config.fire_tags[]] | unique | if index(true)>-1 then \"true\" else \"false\" end",
+                "data.$": "$"
+              },
+              "ResultPath": "$.is_fire_tag_present",
+              "Next": "005.Choice.CheckTagsResult"
+            },
+            "005.Choice.CheckTagsResult": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.is_fire_tag_present",
+                  "StringEquals": "true",
+                  "Next": "006.Zendesk.GetTicketDetails"
+                }
+              ],
+              "Default": "DoneWithoutUpdate"
+            },
+
+            "006.Zendesk.GetTicketDetails": {
+              "Type": "Action",
+              "Comment": "Get ticket details",
+              "ActionName": "zis:{{zis_integration_key}}:action:zendesk.get_ticket_object",
+              "Parameters": {
+                "ticket_id.$": "$.input.ticket_event.ticket.id"
+              },
+              "ResultPath": "$.api_response_ticket_data",
+              "Next": "007.Transform.CheckMessagingTagsPresent"
+            },
+
+            "007.Transform.CheckMessagingTagsPresent": {
+              "Type": "Action",
+              "ActionName": "zis:common:transform:Jq",
+              "Comment": "Check if messaging tags present",
+              "Parameters": {
+                "expr": "[.input.ticket_event.ticket.tags[] == .config.messaging_tags[]] | unique | if index(true)>-1 then \"true\" else \"false\" end",
+                "data.$": "$"
+              },
+              "ResultPath": "$.is_messaging_tag_present",
+              "Next": "008.Choice.CheckIfMessaging"
+            },
+
+            "008.Choice.CheckIfMessaging": {
+              "Type": "Choice",
+              "Comment": "If messaging: go to messaging flow else email flow",
+              "Choices": [
+                {
+                  "Variable": "$.is_messaging_tag_present",
+                  "StringEquals": "true",
+                  "Next": "009.Transform.BuildMessagingPayload"
+                }
+              ],
+              "Default": "015.Transform.BuildEmailPayload"
+            },
+
+            "009.Transform.BuildMessagingPayload": {
+              "Type": "Action",
+              "Comment": "Format genesys API attributes for messaging",
+              "ActionName": "zis:common:transform:Jq",
+              "Parameters": {
+                "expr": "{\"channel\":{\"from\":{\"id\": (\"zd_message_\"+(.config.messsaging_coversation_id as $messaging_id |  .api_response_ticket_data.ticket.custom_fields[] | select(.id == $messaging_id).value) + \"_\" +(now | strftime(\"%Y-%m-%dT%H:%M:%S.000Z\"))), \"idType\":\"email\",\"nickname\": (.api_response_ticket_data.users[0].name) },\"time\":(now | strftime(\"%Y-%m-%dT%H:%M:%S.000Z\")), \"metadata\":{\"customAttributes\":{\"zd_ticket_id\": \"\\(.api_response_ticket_data.ticket.id)\",\"zd_brand\": \"\\(.api_response_ticket_data.ticket.brand_id)\",\"zd_channel\":(.api_response_ticket_data.ticket.via.channel),\"zd_order_number\":(.config.order_number_field_id as $order_number | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $order_number).value),\"zd_genesys_participant_id\":(.config.genesys_participant_id as $genesys_participant_id | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $genesys_participant_id).value),\"zd_customer_contact_intent\":(.config.contact_reason_field_id as $contact_reason | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $contact_reason).value),\"zd_intent\":(.config.intent_field_id as $intent | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $intent).value),\"zd_language\":(.config.language_field_id as $language | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $language).value),\"ZD_SearchType\":\"TICKET\",\"ZD_SearchValue\": \"\\(.api_response_ticket_data.ticket.id)\", \"zd_priority\": (.api_response_ticket_data.ticket.priority), \"zd_group\": (.api_response_ticket_data.ticket.group_id), \"zd_status\": (.api_response_ticket_data.ticket.status), \"zd_due_date\": (.api_response_ticket_data.ticket.due_at), \"zd_title\": (.api_response_ticket_data.ticket.subject), \"zd_genesys_object_conversation_id\": (.config.genesys_integration_custom_field_id as $cf |  .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value), \"zd_action\": (.config.action_field_id as $cf | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value),\"zd_reason_assign_claim\": (.config.reason_assign_claim_field_id as $cf |  .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value), \"zd_reason_assign_escalations\": (.config.reason_assign_escalations_field_id as $cf |  .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value), \"zd_reason_assign_payouts\": (.config.reason_assign_payouts_field_id as $cf |  .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value),\"zd_deadline_due_date\": (.config.deadline_due_date_field_id as $cf |  .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value), \"zd_ticket_type\": (.api_response_ticket_data.ticket.type), \"zd_assignee\": (.api_response_ticket_data.ticket.assignee_id), \"zd_ticket_custom_status\": (.api_response_ticket_data.ticket.custom_status_id), \"zd_pnr\": (.config.pnr_field_id as $cf | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value), \"zd_contact_reason\": (.config.contact_reasons_field_id as $cf | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value), \"zd_messaging_conversation_id\": (.config.messaging_conversation_id_field_id as $cf | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value), \"zd_post_sale_handling\": (.config.post_sale_handling_field_id as $cf | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value),  \"zd_customer_callback_number\": (.config.customer_callback_number_field_id as $cf | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value), \"zd_genesys_interaction_type\": (.config.genesys_interaction_type_field_id as $cf | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value), \"zd_genesys_conversation_id\": (.config.genesys_conversation_id_field_id as $cf | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value) }}}, \"text\": \"Zendesk Messaging\"}",
+                "data.$": "$"
+              },
+              "ResultPath": "$.message_payload",
+              "Next": "010.Genesys.PostMessage"
+            },
+
+            "010.Genesys.PostMessage": {
+              "Type": "Action",
+              "ActionName": "zis:{{zis_integration_key}}:action:genesys.post_message",
+              "Parameters": {
+                "baseUrl.$": "$.config.genesys_base_url",
+                "integrationId.$": "$.config.genesys_integration_id",
+                "payload.$": "$.message_payload"
+              },
+              "ResultPath": "$.genesys_response",
+              "Next": "011.Choice.CheckDetailsResponse",
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.genesys_error_response",
+                  "Next": "E01.Transform.ParseErrorCode"
+                }
+              ]
+            },
+
+            "011.Choice.CheckDetailsResponse": {
+              "Type": "Choice",
+              "Comment": "Check if genesys api success, else go to fail flow",
+              "Choices": [
+                {
+                  "Variable": "$.genesys_response.id",
+                  "IsPresent": true,
+                  "Next": "012.Transform.UpdateTicketMessagingWithConversationId"
+                }
+              ],
+              "Default": "FailFlow"
+            },
+            "012.Transform.UpdateTicketMessagingWithConversationId": {
+              "Comment": "Create payload to update ticket with new conversation id",
+              "Type": "Action",
+              "ActionName": "zis:common:transform:Jq",
+              "Parameters": {
+                "expr": "{\"ticket\":{\"custom_fields\":[{\"id\": .config.genesys_integration_custom_field_id, \"value\": .genesys_response.id }]}}",
+                "data.$": "$"
+              },
+              "ResultPath": "$.payload",
+              "Next": "013.Zendesk.UpdateTicketDetailsMessaging"
+            },
+            "013.Zendesk.UpdateTicketDetailsMessaging": {
+              "Type": "Action",
+              "ActionName": "zis:{{zis_integration_key}}:action:zendesk.update_ticket",
+              "Parameters": {
+                "ticketId.$": "$.input.ticket_event.ticket.id",
+                "payload.$": "$.payload"
+              },
+              "Next": "014.Pass.InitAddTagApiErrorCount",
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.update_ticket_api_error_response",
+                  "Next": "E01.Choice.CheckUpdateTicketDetailsApiErrorCountAndRetry"
+                }
+              ]
+            },
+
+            "E01.Choice.CheckUpdateTicketDetailsApiErrorCountAndRetry": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.update_ticket_api_error.count",
+                  "NumericLessThanPath": "$.config.update_ticket_api_max_error_count",
+                  "Next": "E02.Transform.IncrementUpdateTicketDetailsApiErrorCount"
+                }
+              ],
+              "Default": "FailFlowForUpdateTicketDetails"
+            },
+            "E02.Transform.IncrementUpdateTicketDetailsApiErrorCount": {
+              "Type": "Action",
+              "ActionName": "zis:common:transform:Jq",
+              "Parameters": {
+                "expr": ".count + 1",
+                "data.$": "$.update_ticket_api_error"
+              },
+              "ResultPath": "$.update_ticket_api_error.count",
+              "Next": "E03.Wait.TenSecondsAndCallUpdateTicket"
+            },
+            "E03.Wait.TenSecondsAndCallUpdateTicket": {
+              "Type": "Wait",
+              "Seconds": 10,
+              "Next": "013.Zendesk.UpdateTicketDetailsMessaging"
+            },
+
+            "014.Pass.InitAddTagApiErrorCount": {
+              "Type": "Pass",
+              "Result": {
+                "count": 0
+              },
+              "ResultPath": "$.add_tag_api_error",
+              "Next": "020.Zendesk.AddTag"
+            },
+
+            "015.Transform.BuildEmailPayload": {
+              "Type": "Action",
+              "Comment": "Create genesys email api attributes",
+              "ActionName": "zis:common:transform:Jq",
+              "Parameters": {
+                "expr": "{\"flowId\":\"46588a6a-2dcb-46f2-81b5-c1e8d35495f1\",\"direction\":\"INBOUND\",\"provider\":\"Zendesk\", \"fromName\": (.api_response_ticket_data.users[0].name), \"attributes\": {\"zd_ticket_id\": \"\\(.api_response_ticket_data.ticket.id)\",\"zd_brand\": \"\\(.api_response_ticket_data.ticket.brand_id)\",\"zd_channel\":(.api_response_ticket_data.ticket.via.channel),\"zd_order_number\":(.config.order_number_field_id as $order_number | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $order_number).value),\"zd_genesys_participant_id\":(.config.genesys_participant_id as $genesys_participant_id | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $genesys_participant_id).value),\"zd_customer_contact_intent\":(.config.contact_reason_field_id as $contact_reason | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $contact_reason).value),\"zd_intent\":(.config.intent_field_id as $intent | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $intent).value),\"zd_language\":(.config.language_field_id as $language | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $language).value),\"ZD_SearchType\":\"TICKET\",\"ZD_SearchValue\": \"\\(.api_response_ticket_data.ticket.id)\", \"zd_priority\": (.api_response_ticket_data.ticket.priority), \"zd_group\": (.api_response_ticket_data.ticket.group_id), \"zd_status\": (.api_response_ticket_data.ticket.status), \"zd_due_date\": (.api_response_ticket_data.ticket.due_at), \"zd_title\": (.api_response_ticket_data.ticket.subject), \"zd_genesys_object_conversation_id\": (.config.genesys_integration_custom_field_id as $cf |  .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value), \"zd_action\": (.config.action_field_id as $cf | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value),\"zd_reason_assign_claim\": (.config.reason_assign_claim_field_id as $cf |  .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value), \"zd_reason_assign_escalations\": (.config.reason_assign_escalations_field_id as $cf |  .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value), \"zd_reason_assign_payouts\": (.config.reason_assign_payouts_field_id as $cf |  .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value),\"zd_deadline_due_date\": (.config.deadline_due_date_field_id as $cf |  .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value), \"zd_ticket_type\": (.api_response_ticket_data.ticket.type), \"zd_assignee\": (.api_response_ticket_data.ticket.assignee_id), \"zd_ticket_custom_status\": (.api_response_ticket_data.ticket.custom_status_id), \"zd_pnr\": (.config.pnr_field_id as $cf | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value), \"zd_contact_reason\": (.config.contact_reasons_field_id as $cf | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value), \"zd_messaging_conversation_id\": (.config.messaging_conversation_id_field_id as $cf | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value), \"zd_post_sale_handling\": (.config.post_sale_handling_field_id as $cf | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value),  \"zd_customer_callback_number\": (.config.customer_callback_number_field_id as $cf | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value), \"zd_genesys_interaction_type\": (.config.genesys_interaction_type_field_id as $cf | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value), \"zd_genesys_conversation_id\": (.config.genesys_conversation_id_field_id as $cf | .api_response_ticket_data.ticket.custom_fields[] | select(.id == $cf).value) }}",
+                "data.$": "$"
+              },
+              "ResultPath": "$.email_payload",
+              "Next": "016.Genesys.EmailConversation"
+            },
+            "016.Genesys.EmailConversation": {
+              "Type": "Action",
+              "Comment": "Call genesys email conversation api",
+              "ActionName": "zis:{{zis_integration_key}}:action:genesys.email_conversation",
+              "Parameters": {
+                "baseUrl.$": "$.config.genesys_base_url",
+                "payload.$": "$.email_payload"
+              },
+              "ResultPath": "$.genesys_response",
+              "Next": "017.Choice.CheckEmailDetailsResponse",
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.genesys_error_response",
+                  "Next": "E01.Transform.ParseErrorCode"
+                }
+              ]
+            },
+
+            "017.Choice.CheckEmailDetailsResponse": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.genesys_response.id",
+                  "IsPresent": true,
+                  "Next": "018.Transform.UpdateTicketEmailWithConversationId"
+                }
+              ],
+              "Default": "FailFlow"
+            },
+            "018.Transform.UpdateTicketEmailWithConversationId": {
+              "Comment": "Create payload to update ticket with new conversation id",
+              "Type": "Action",
+              "ActionName": "zis:common:transform:Jq",
+              "Parameters": {
+                "expr": "{\"ticket\":{\"custom_fields\":[{\"id\": .config.genesys_integration_custom_field_id,\"value\": .genesys_response.id }]}}",
+                "data.$": "$"
+              },
+              "ResultPath": "$.payload",
+              "Next": "019.Zendesk.UpdateTicketDetailsEmail"
+            },
+            "019.Zendesk.UpdateTicketDetailsEmail": {
+              "Type": "Action",
+              "ActionName": "zis:{{zis_integration_key}}:action:zendesk.update_ticket",
+              "Parameters": {
+                "ticketId.$": "$.input.ticket_event.ticket.id",
+                "payload.$": "$.payload"
+              },
+              "Next": "020.Zendesk.AddTag"
+            },
+
+            "020.Zendesk.AddTag": {
+              "Type": "Action",
+              "ActionName": "zis:{{zis_integration_key}}:action:zendesk.add_tag",
+              "Parameters": {
+                "id.$": "$.input.ticket_event.ticket.id",
+                "tag.$": "$.config.tag_processed"
+              },
+              "Next": "021.Transform.LogDone",
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.add_tag_api_error_response",
+                  "Next": "E01.Choice.CheckApiErrorCountAndRetry"
+                }
+              ]
+            },
+
+            "021.Transform.LogDone": {
+              "Comment": "Log Info",
+              "Type": "Action",
+              "ActionName": "zis:common:transform:Jq",
+              "Parameters": {
+                "expr": ".logger + \" || \" + if .is_messaging_tag_present == \"true\" then \"Messaging\" else \"Email\" end",
+                "data.$": "$"
+              },
+              "ResultPath": "$.logger",
+              "Next": "Done"
+            },
+
+            "E01.Choice.CheckApiErrorCountAndRetry": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.add_tag_api_error.count",
+                  "NumericLessThanPath": "$.config.add_tag_api_max_error_count",
+                  "Next": "E02.Transform.IncrementAddTagApiErrorCount"
+                }
+              ],
+              "Default": "FailFlowForAddTag"
+            },
+            "E02.Transform.IncrementAddTagApiErrorCount": {
+              "Type": "Action",
+              "ActionName": "zis:common:transform:Jq",
+              "Parameters": {
+                "expr": ".count + 1",
+                "data.$": "$.add_tag_api_error"
+              },
+              "ResultPath": "$.add_tag_api_error.count",
+              "Next": "E03.Wait.TenSeconds"
+            },
+            "E03.Wait.TenSeconds": {
+              "Type": "Wait",
+              "Seconds": 10,
+              "Next": "020.Zendesk.AddTag"
+            },
+
+            "E01.Transform.ParseErrorCode": {
+              "Type": "Action",
+              "ActionName": "zis:common:transform:Jq",
+              "Parameters": {
+                "expr": ".Cause | contains(\"401\")",
+                "data.$": "$.genesys_error_response"
+              },
+              "ResultPath": "$.genesys_401_error_code",
+              "Next": "E02.Choice.ValidateErrorCode"
+            },
+            "E02.Choice.ValidateErrorCode": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.genesys_401_error_code",
+                  "BooleanEquals": true,
+                  "Next": "E03.Choice.ValidateAlertTicketId"
+                }
+              ],
+              "Default": "E06.CreateAlertTicket"
+            },
+            "E03.Choice.ValidateAlertTicketId": {
+              "Type": "Choice",
+              "Comment": "If config.alert_ticket_id !== -1 go to ticket else create new ticket",
+              "Choices": [
+                {
+                  "Not": {
+                    "Variable": "$.config.alert_ticket_id",
+                    "NumericEquals": -1
+                  },
+                  "Next": "E04.GetAlertTicket"
+                }
+              ],
+              "Default": "E06.CreateAlertTicket"
+            },
+            "E04.GetAlertTicket": {
+              "Type": "Action",
+              "ActionName": "zis:{{zis_integration_key}}:action:zendesk.get_ticket_object",
+              "Parameters": {
+                "id.$": "$.config.alert_ticket_id"
+              },
+              "ResultPath": "$.alert_ticket_obj",
+              "Next": "E05.Choice.CheckAlertTicketStatus"
+            },
+            "E05.Choice.CheckAlertTicketStatus": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.alert_ticket_obj.ticket.status",
+                  "StringEquals": "open",
+                  "Next": "FailFlow"
+                }
+              ],
+              "Default": "E06.CreateAlertTicket"
+            },
+            "E06.CreateAlertTicket": {
+              "Type": "Action",
+              "ActionName": "zis:{{zis_integration_key}}:action:zendesk.create_ticket",
+              "Parameters": {
+                "group_id.$": "$.config.alert_group_id",
+                "error_message.$": "$.genesys_error_response.Cause"
+              },
+              "ResultPath": "$.new_alert_ticket_obj",
+              "Next": "E07.Choice.CheckNewAlertTicketResponse"
+            },
+            "E07.Choice.CheckNewAlertTicketResponse": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.new_alert_ticket_obj.ticket",
+                  "IsPresent": true,
+                  "Next": "E08.Zendesk.PatchConfig"
+                }
+              ],
+              "Default": "FailFlow"
+            },
+            "E08.Zendesk.PatchConfig": {
+              "Type": "Action",
+              "ActionName": "zis:common:action:PatchConfig",
+              "Parameters": {
+                "scope": "{{zis_integration_key}}_settings",
+                "config": {
+                  "alert_ticket_id.$": "$.new_alert_ticket_obj.ticket.id"
+                }
+              },
+              "Next": "E09.ErrorDone"
+            },
+            "E09.ErrorDone": {
+              "Type": "Succeed",
+              "Message": "ZIS Executed || Ticket #{{$.input.ticket_event.ticket.id}} || Alert Ticket #{{$.new_alert_ticket_obj.ticket.id}}"
+            },
+
+            "Debugger.PrintLogOne": {
+              "Type": "Action",
+              "ActionName": "zis:{{zis_integration_key}}:action:debugger_print_log",
+              "Parameters": {
+                "endpoint.$": "$.config.webhook_endpoint",
+                "allData.$": "$"
+              },
+              "Next": "Done"
+            },
+
+            "Done": {
+              "Type": "Succeed",
+              "Message": "ZIS Executed || Ticket #{{$.input.ticket_event.ticket.id}} {{$.logger}}"
+            },
+            "DoneWithoutUpdate": {
+              "Type": "Succeed",
+              "Message": "ZIS Executed || Ticket #{{$.input.ticket_event.ticket.id}}"
+            },
+            "FailFlow": {
+              "Type": "Fail",
+              "Error": "ZIS Failed || Ticket #{{$.input.ticket_event.ticket.id}} || Genesys API call Failed. {{$.genesys_error_response.Cause}}",
+              "Cause": "Ticket #{{$.input.ticket_event.ticket.id}} || Genesys API call Failed. {{$.genesys_error_response.Cause}}"
+            },
+            "FailFlowForAddTag": {
+              "Type": "Fail",
+              "Error": "ZIS Failed || Ticket #{{$.input.ticket_event.ticket.id}} || Zendesk Add-Tag API call Failed {{$.add_tag_api_error_response.Cause}}",
+              "Cause": "Ticket #{{$.input.ticket_event.ticket.id}} || Zendesk Add-Tag API call Failed {{$.add_tag_api_error_response.Cause}}"
+            },
+            "FailFlowForUpdateTicketDetails": {
+              "Type": "Fail",
+              "Error": "ZIS Failed || Ticket #{{$.input.ticket_event.ticket.id}} || Zendesk Update-Ticket-Details API call Failed {{$.update_ticket_api_error_response.Cause}}",
+              "Cause": "Ticket #{{$.input.ticket_event.ticket.id}} || Zendesk Update-Ticket-Details API call Failed {{$.update_ticket_api_error_response.Cause}}"
+            }
+          }
+        }
+      }
+    },
+
+    "push_agent_status_to_genesys_flow": {
+      "type": "ZIS::Flow",
+      "properties": {
+        "name": "push_agent_status_to_genesys_flow",
+        "definition": {
+          "StartAt": "001.Choice.Agent_Status_evt",
+          "States": {
+            "001.Choice.Agent_Status_evt": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.input.type",
+                  "StringEquals": "zen:event-type:agent.unified_state_changed",
+                  "Next": "002.LoadConfig"
+                }
+              ],
+              "Default": "Done"
+            },
+            "002.LoadConfig": {
+              "Type": "Action",
+              "ActionName": "zis:common:action:LoadConfig",
+              "Parameters": {
+                "scope": "{{zis_integration_key}}_settings"
+              },
+              "ResultPath": "$.config",
+              "Next": "003.Zendesk.GetUsersDetails"
+            },
+            "003.Zendesk.GetUsersDetails": {
+              "Type": "Action",
+              "ActionName": "zis:{{zis_integration_key}}:action:zendesk.get_user",
+              "Parameters": {
+                "id.$": "$.input.detail.agent_id"
+              },
+              "ResultPath": "$.agent_obj",
+              "Next": "004.Transform.GetAgentEmail"
+            },
+            "004.Transform.GetAgentEmail": {
+              "Type": "Action",
+              "ActionName": "zis:common:transform:Jq",
+              "Comment": "Get agent email",
+              "Parameters": {
+                "expr": ".agent_obj.user.email",
+                "data.$": "$"
+              },
+              "ResultPath": "$.AgentEmail",
+              "Next": "005.Genesys.SearchGenesysUser"
+            },
+            "005.Genesys.SearchGenesysUser": {
+              "Type": "Action",
+              "Comment": "Genesys search user by email id",
+              "ActionName": "zis:{{zis_integration_key}}:action:genesys.search_user",
+              "Parameters": {
+                "baseUrl.$": "$.config.genesys_base_url",
+                "user_email.$": "$.AgentEmail"
+              },
+              "ResultPath": "$.genesys.search_results",
+              "Next": "006.Choice.CheckResults",
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.genesys_error_response",
+                  "Next": "E01.ErrorDone"
+                }
+              ]
+            },
+            "E01.ErrorDone": {
+              "Type": "Succeed",
+              "Message": "ZIS Executed || Genesys user not found"
+            },
+            "006.Choice.CheckResults": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.genesys.search_results.total",
+                  "NumericEquals": 1,
+                  "Next": "007.Transform.GetAgentId"
+                }
+              ],
+              "Default": "E01.ErrorDone"
+            },
+            "007.Transform.GetAgentId": {
+              "Type": "Action",
+              "ActionName": "zis:common:transform:Jq",
+              "Comment": "Get agent id",
+              "Parameters": {
+                "expr": ".genesys.search_results.results[0].id",
+                "data.$": "$"
+              },
+              "ResultPath": "$.genesys.agent.Id",
+              "Next": "008.Transform.GetAgenNewStatus"
+            },
+            "008.Transform.GetAgenNewStatus": {
+              "Type": "Action",
+              "ActionName": "zis:common:transform:Jq",
+              "Comment": "Get agent new status",
+              "Parameters": {
+                "expr": ".input.event.new_unified_state.id as $ID | .config.zd2genesys_status_map[] |  select(.zdid == $ID) | .genesysid",
+                "data.$": "$"
+              },
+              "ResultPath": "$.genesys.agent.newstatus.id",
+              "Next": "009.Genesys.PushStatus"
+            },
+            "logStep.payload": {
+              "Type": "Action",
+              "ActionName": "zis:{{zis_integration_key}}:action:debugger_print_log",
+              "Parameters": {
+                "endpoint.$": "$.config.webhook_endpoint",
+                "allData.$": "$"
+              },
+              "Next": "009.Genesys.PushStatus"
+            },
+            "009.Genesys.PushStatus": {
+              "Type": "Action",
+              "ActionName": "zis:{{zis_integration_key}}:action:genesys.push_agent_status",
+              "Parameters": {
+                "baseUrl.$": "$.config.genesys_base_url",
+                "genesysAgentId.$": "$.genesys.agent.Id",
+                "statusId.$": "$.genesys.agent.newstatus.id"
+              },
+              "ResultPath": "$.genesys_response",
+              "Next": "Done"
+            },
+            "logStep": {
+              "Type": "Action",
+              "ActionName": "zis:{{zis_integration_key}}:action:debugger_print_log",
+              "Parameters": {
+                "endpoint.$": "$.config.webhook_endpoint",
+                "allData.$": "$"
+              },
+              "Next": "Done"
+            },
+            "Done": {
+              "Type": "Succeed",
+              "Message": "ZIS Executed || Status updated in Genesys"
+            }
+          }
+        }
+      }
+    },
+
+    "debugger_print_log": {
+      "type": "ZIS::Action::Http",
+      "properties": {
+        "name": "debugger_print_log",
+        "definition": {
+          "method": "POST",
+          "url": "{{$.endpoint}}",
+          "requestBody": {
+            "payload": "$.allData"
+          }
+        }
+      }
+    },
+
+    "zendesk.get_ticket_object": {
+      "type": "ZIS::Action::Http",
+      "properties": {
+        "name": "zendesk.get_ticket_object",
+        "definition": {
+          "method": "GET",
+          "path": "/api/v2/tickets/{{$.ticket_id}}.json?include=users",
+          "connectionName": "zendesk",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      }
+    },
+
+    "post_message_action": {
+      "type": "ZIS::Action::Http",
+      "properties": {
+        "name": "genesys.post_message",
+        "definition": {
+          "method": "POST",
+          "url": "{{$.baseUrl}}/api/v2/conversations/messages/{{$.integrationId}}/inbound/open/message?prefetchConversationId=true",
+          "connectionName": "genesys",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "requestBody.$": "$.payload"
+        }
+      }
+    },
+
+    "email_conversation": {
+      "type": "ZIS::Action::Http",
+      "properties": {
+        "name": "genesys.email_conversation",
+        "definition": {
+          "method": "POST",
+          "url": "{{$.baseUrl}}/api/v2/conversations/emails",
+          "connectionName": "genesys",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "requestBody.$": "$.payload"
+        }
+      }
+    },
+
+    "zendesk.get_ticket_audits": {
+      "type": "ZIS::Action::Http",
+      "properties": {
+        "name": "zendesk.get_ticket_audits",
+        "definition": {
+          "method": "GET",
+          "path": "/api/v2/tickets/{{$.ticketId}}/audits",
+          "connectionName": "zendesk",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      }
+    },
+
+    "zendesk.create_ticket": {
+      "type": "ZIS::Action::Http",
+      "properties": {
+        "name": "zendesk.create_ticket",
+        "definition": {
+          "method": "POST",
+          "path": "/api/v2/tickets.json",
+          "connectionName": "zendesk",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "requestBody": {
+            "ticket": {
+              "comment": {
+                "html_body.$": "$.error_message",
+                "public": false
+              },
+              "status": "open",
+              "priority": "urgent",
+              "subject": "Zendesk -> Genesys integration flow failed",
+              "group_id.$": "$.group_id"
+            }
+          }
+        }
+      }
+    },
+
+    "zendesk.update_ticket": {
+      "type": "ZIS::Action::Http",
+      "properties": {
+        "name": "zendesk.update_ticket",
+        "definition": {
+          "method": "PUT",
+          "path": "/api/v2/tickets/{{$.ticketId}}",
+          "connectionName": "zendesk",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "requestBody.$": "$.payload"
+        }
+      }
+    },
+
+    "zendesk.add_tag_action": {
+      "type": "ZIS::Action::Http",
+      "properties": {
+        "name": "zendesk.add_tag",
+        "definition": {
+          "method": "PUT",
+          "path": "/api/v2/tickets/{{$.id}}/tags",
+          "connectionName": "zendesk",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "requestBody": {
+            "tags": ["{{$.tag}}"]
+          }
+        }
+      }
+    },
+
+    "zendesk.get_user": {
+      "type": "ZIS::Action::Http",
+      "properties": {
+        "name": "zendesk.get_user",
+        "definition": {
+          "method": "GET",
+          "url": "/api/v2/users/{{$.id}}.json",
+          "connectionName": "zendesk",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      }
+    },
+
+    "genesys.search_user": {
+      "type": "ZIS::Action::Http",
+      "properties": {
+        "name": "genesys.search_user",
+        "definition": {
+          "method": "POST",
+          "url": "{{$.baseUrl}}/api/v2/users/search",
+          "connectionName": "genesys",
+          "requestBody": {
+            "pageSize": 1,
+            "pageNumber": 1,
+            "query": [
+              {
+                "type": "QUERY_STRING",
+                "fields": ["addresses.email"],
+                "value.$": "$.user_email"
+              }
+            ]
+          }
+        }
+      }
+    },
+
+    "genesys.push_agent_status": {
+      "type": "ZIS::Action::Http",
+      "properties": {
+        "name": "genesys.push_agent_status",
+        "definition": {
+          "method": "PATCH",
+          "url": "{{$.baseUrl}}/api/v2/users/{{$.genesysAgentId}}/presences/PURECLOUD",
+          "connectionName": "genesys",
+          "requestBody": {
+            "name": "test",
+            "source": "PURECLOUD",
+            "primary": true,
+            "presenceDefinition": {
+              "id.$": "$.statusId"
+            },
+            "message": "none"
+          }
+        }
+      }
+    }
+  }
+}

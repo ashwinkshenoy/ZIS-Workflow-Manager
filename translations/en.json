@@ -1,0 +1,14 @@
+{
+  "app": {
+    "name": "ZIS Workflow Manager",
+    "short_description": "ZIS Workflow Manager",
+    "long_description": "ZIS Workflow Manager",
+    "installation_instructions": "Simply click install.",
+    "parameters": {
+      "showLogs": {
+        "label": "General: Show App Logs in Console",
+        "helpText": "Use this for debugging. Should be disabled for day-to-day use."
+      }
+    }
+  }
+}
