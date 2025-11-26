@@ -94,7 +94,6 @@ export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCrea
 
       const token = appParams?.verification_token;
       const integrationName = appParams?.name;
-      console.log('token:', token, 'integrationName:', integrationName);
 
       if (!token || !integrationName) return;
       const storedData = localStorage.getItem(integrationName);
@@ -181,7 +180,6 @@ export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCrea
         },
       });
 
-      // const full_token = 'ad67e3d80998ba7e536359fbc2b3b0d25b7a6f805cdf36a66a7eb077b0111eec';
       const full_token = createBearerTokenResponse.token.full_token;
 
       // Call createOauthClient method from ZDClient
