@@ -1,6 +1,6 @@
 import type { ZISFlow, Workflow, ProcessedNode, Edge, ZISChoice, ZISCondition, ZISState } from '@/lib/types';
 
-const X_SPACING = 400;
+const X_SPACING = 600;
 const Y_SPACING = 200;
 
 export const conditionTypes = [

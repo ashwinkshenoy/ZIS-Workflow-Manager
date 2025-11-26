@@ -52,7 +52,7 @@ export function WorkflowNode({ data, selected, id, isStartNode }: CustomNodeProp
       data-wf-node='true'
       className='relative group'
       style={{
-        width: 300,
+        width: 350,
       }}>
       {/* These handles are invisible connection points for react-flow */}
       <Handle type='target' position={Position.Top} className='!bg-transparent' />
