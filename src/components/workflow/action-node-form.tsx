@@ -9,6 +9,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { useIntegration } from '@/context/integration-context';
 
 type ActionNodeFormProps = {
   data: ZISState;
@@ -17,6 +18,8 @@ type ActionNodeFormProps = {
 };
 
 export function ActionNodeForm({ data, actions, onChange }: ActionNodeFormProps) {
+  const { selectedIntegration } = useIntegration();
+
   const handleParameterChange = (index: number, field: 'key' | 'value', newValue: string) => {
     if (!data.Parameters) return;
     const params = { ...data.Parameters };
@@ -85,7 +88,7 @@ export function ActionNodeForm({ data, actions, onChange }: ActionNodeFormProps)
         };
       }
     } else {
-      newActionName = `zis:{{zis_integration_key}}:action:${selectedActionKey}`;
+      newActionName = `zis:${selectedIntegration || 'integration_key'}:action:${selectedActionKey}`;
       updatedState.Parameters = {}; // Clear parameters for custom actions
     }
     updatedState.ActionName = newActionName;

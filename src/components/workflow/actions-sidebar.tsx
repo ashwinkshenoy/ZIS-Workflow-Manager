@@ -1,15 +1,7 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import type { ZISActionHttp, ZISResource, Workflow } from '@/lib/types';
@@ -24,6 +16,8 @@ import { Separator } from '../ui/separator';
 import { Textarea } from '../ui/textarea';
 import { NewActionDialog } from './new-action-dialog';
 import { DeleteActionDialog } from './delete-action-dialog';
+import { actionTemplates, type ActionTemplate } from '@/lib/action-templates';
+import { ActionTemplatesList } from './action-templates-list';
 
 type ActionsSidebarProps = {
   isOpen: boolean;
@@ -112,7 +106,6 @@ export function ActionsSidebar({
     };
   }, [isOpen, handleMouseMove, handleMouseUp]);
 
-
   const handleActionFormChange = (updatedProperties: any) => {
     if (!selectedActionId || !selectedAction) return;
     const updatedAction = {
@@ -122,7 +115,7 @@ export function ActionsSidebar({
     onActionUpdate(selectedActionId, updatedAction);
     setRawJson(JSON.stringify(updatedProperties, null, 2));
   };
-  
+
   const handleRawJsonChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newJson = e.target.value;
     setRawJson(newJson);
@@ -135,10 +128,50 @@ export function ActionsSidebar({
     }
   };
 
-  const handleActionAdd = (actionId: string, actionType: 'ZIS::Action::Http') => {
+  const handleActionAdd = (actionId: string, actionType: 'ZIS::Action::Http', templateConfig?: any) => {
     onActionAdd(actionId, actionType);
     setSelectedActionId(actionId);
     setNewActionDialogOpen(false);
+
+    // If template config is provided, apply it after the action is created
+    if (templateConfig) {
+      // Small delay to ensure the action exists before updating
+      setTimeout(() => {
+        const newAction: ZISResource = {
+          type: actionType,
+          properties: templateConfig,
+        };
+        onActionUpdate(actionId, newAction);
+      }, 0);
+    }
+  };
+
+  const handleTemplateSelect = (template: ActionTemplate) => {
+    // Generate a unique action ID based on the template's suggestion
+    let actionId = template.suggestedActionId;
+    let counter = 1;
+
+    // Ensure uniqueness
+    while (actions[actionId]) {
+      actionId = `${template.suggestedActionId}.${counter}`;
+      counter++;
+    }
+
+    // Convert headers from object to array format expected by the form
+    const templateConfig = { ...template.defaultConfig };
+    const definition = { ...templateConfig.definition };
+
+    if (definition.headers && typeof definition.headers === 'object' && !Array.isArray(definition.headers)) {
+      (definition as any).headers = Object.entries(definition.headers).map(([key, value]) => ({
+        key,
+        value: value as string,
+      }));
+    }
+
+    templateConfig.definition = definition;
+
+    // Create the action with template config
+    handleActionAdd(actionId, template.type, templateConfig);
   };
 
   const handleActionDeleteConfirm = () => {
@@ -148,79 +181,66 @@ export function ActionsSidebar({
     setDeleteActionDialogOpen(false);
   };
 
-
   const renderActionForm = () => {
     if (!selectedAction) return null;
 
     switch (selectedAction.type) {
       case 'ZIS::Action::Http':
-        return (
-          <ActionHttpForm
-            data={selectedAction.properties}
-            onChange={handleActionFormChange}
-          />
-        );
+        return <ActionHttpForm data={selectedAction.properties} onChange={handleActionFormChange} />;
       default:
-        return <p className="text-sm text-muted-foreground">This action type is not yet editable via the form.</p>;
+        return <p className='text-sm text-muted-foreground'>This action type is not yet editable via the form.</p>;
     }
   };
 
   return (
     <>
       <Sheet open={isOpen} onOpenChange={onClose}>
-        <SheetContent
-          className="flex flex-col group"
-          style={{ width: `${width}px`, maxWidth: '80vw' }}
-        >
+        <SheetContent className='flex flex-col group' style={{ width: `${width}px`, maxWidth: '80vw' }}>
           <div
             onMouseDown={handleMouseDown}
             className={cn(
               'absolute left-0 top-0 h-full w-2.5 cursor-col-resize flex items-center justify-center transition-colors z-10',
               'group-hover:bg-border/50',
               isResizing.current && 'bg-border/80'
-            )}
-          >
-            <GripVertical className={cn('h-6 w-4 text-muted-foreground/50 transition-opacity', 'opacity-0 group-hover:opacity-100', isResizing.current && 'opacity-100')} />
+            )}>
+            <GripVertical
+              className={cn(
+                'h-6 w-4 text-muted-foreground/50 transition-opacity',
+                'opacity-0 group-hover:opacity-100',
+                isResizing.current && 'opacity-100'
+              )}
+            />
           </div>
-          <SheetHeader className="pr-8">
-            <SheetTitle className="flex items-center gap-3">
-              <SlidersHorizontal className="h-6 w-6 text-accent-foreground" />
+          <SheetHeader className='pr-8'>
+            <SheetTitle className='flex items-center gap-3'>
+              <SlidersHorizontal className='h-6 w-6 text-accent-foreground' />
               Manage Actions
             </SheetTitle>
-            <SheetDescription>
-              View and edit the reusable actions defined in this workflow.
-            </SheetDescription>
+            <SheetDescription>View and edit the reusable actions defined in this workflow.</SheetDescription>
           </SheetHeader>
 
-          <ScrollArea className="flex-1 -mx-6 px-6">
-            <div className="space-y-6 py-6">
-              <div className="grid w-full items-center gap-1.5">
+          <ScrollArea className='flex-1 -mx-6 px-6'>
+            <div className='space-y-6 py-6'>
+              <div className='grid w-full items-center gap-1.5'>
                 <div className='flex items-center justify-between'>
-                  <Label htmlFor="action-select">Action</Label>
-                  <div className="flex items-center gap-2">
-                     <Button variant="outline" size="sm" onClick={() => setNewActionDialogOpen(true)}>
-                        <Plus className="mr-2 h-4 w-4" /> New Action
+                  <Label htmlFor='action-select'>Action</Label>
+                  <div className='flex items-center gap-2'>
+                    <Button variant='outline' size='sm' onClick={() => setNewActionDialogOpen(true)}>
+                      <Plus className='mr-2 h-4 w-4' /> New Action
+                    </Button>
+                    {selectedAction && (
+                      <Button variant='destructive-outline' size='sm' onClick={() => setDeleteActionDialogOpen(true)}>
+                        <Trash2 className='mr-2 h-4 w-4' /> Delete
                       </Button>
-                      {selectedAction && (
-                        <Button
-                          variant="destructive-outline"
-                          size="sm"
-                          onClick={() => setDeleteActionDialogOpen(true)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" /> Delete
-                        </Button>
-                      )}
+                    )}
                   </div>
                 </div>
-                <Select
-                  value={selectedActionId || ''}
-                  onValueChange={setSelectedActionId}
-                >
-                  <SelectTrigger id="action-select">
-                    <SelectValue placeholder="Select an action..." />
+                <Select value={selectedActionId || ''} onValueChange={setSelectedActionId}>
+                  <SelectTrigger id='action-select'>
+                    <SelectValue placeholder='Select an action...' />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.keys(actions).map(actionId => (
+                    {Object.keys(actions).map((actionId) => (
                       <SelectItem key={actionId} value={actionId}>
                         {actionId}
                       </SelectItem>
@@ -231,45 +251,37 @@ export function ActionsSidebar({
 
               {selectedAction && (
                 <>
-                  <div className="grid w-full items-center gap-1.5">
-                      <Label htmlFor="node-type">Type</Label>
-                      <Badge id="node-type" variant="outline" className="w-fit">
-                          {selectedAction.type}
-                      </Badge>
+                  <div className='grid w-full items-center gap-1.5'>
+                    <Label htmlFor='node-type'>Type</Label>
+                    <Badge id='node-type' variant='outline' className='w-fit'>
+                      {selectedAction.type}
+                    </Badge>
                   </div>
                   {renderActionForm()}
 
                   <Separator />
 
-                  <Accordion type="single" collapsible className="w-full">
-                    <AccordionItem value="raw-properties">
+                  <Accordion type='single' collapsible className='w-full'>
+                    <AccordionItem value='raw-properties'>
                       <AccordionTrigger>Raw Properties (JSON)</AccordionTrigger>
                       <AccordionContent>
                         <Textarea
                           value={rawJson}
                           onChange={handleRawJsonChange}
                           rows={15}
-                          className={`font-mono text-xs ${!isJsonValid ? 'border-destructive ring-2 ring-destructive ring-offset-2' : ''}`}
-                          placeholder="Enter valid JSON..."
+                          className={`font-mono text-xs ${
+                            !isJsonValid ? 'border-destructive ring-2 ring-destructive ring-offset-2' : ''
+                          }`}
+                          placeholder='Enter valid JSON...'
                         />
-                        {!isJsonValid && (
-                            <p className="mt-2 text-sm text-destructive">Invalid JSON format.</p>
-                          )}
+                        {!isJsonValid && <p className='mt-2 text-sm text-destructive'>Invalid JSON format.</p>}
                       </AccordionContent>
                     </AccordionItem>
                   </Accordion>
                 </>
               )}
-              
-              {Object.keys(actions).length === 0 && (
-                  <div className="text-center py-10">
-                      <p className="text-muted-foreground">No actions defined in this workflow.</p>
-                       <Button variant="link" onClick={() => setNewActionDialogOpen(true)}>
-                        Create one now
-                      </Button>
-                  </div>
-              )}
 
+              {!selectedActionId && <ActionTemplatesList onTemplateSelect={handleTemplateSelect} />}
             </div>
           </ScrollArea>
 
