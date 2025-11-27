@@ -48,7 +48,7 @@ export function ActionTemplatesList({ onTemplateSelect }: ActionTemplatesListPro
   ];
 
   return (
-    <>
+    <div className='pt-4 space-y-6'>
       <Separator />
 
       <div className='space-y-4 pb-6'>
@@ -74,7 +74,7 @@ export function ActionTemplatesList({ onTemplateSelect }: ActionTemplatesListPro
             if (!templates || templates.length === 0) return null;
 
             return (
-              <div key={category} className='space-y-3 bg-slate-100 p-5 rounded-xl'>
+              <div key={category} className='space-y-3 bg-slate-100 dark:bg-zinc-800 p-5 rounded-xl'>
                 <h4 className='text-sm font-bold uppercase tracking-wider text-foreground'>{category}</h4>
 
                 <div className='grid grid-cols-2 gap-3'>
@@ -102,6 +102,6 @@ export function ActionTemplatesList({ onTemplateSelect }: ActionTemplatesListPro
           })}
         </div>
       </div>
-    </>
+    </div>
   );
 }

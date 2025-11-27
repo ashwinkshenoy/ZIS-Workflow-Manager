@@ -9,11 +9,12 @@ import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '../ui/textarea';
 import { Separator } from '../ui/separator';
 import { ScrollArea } from '../ui/scroll-area';
-import { GripVertical, Loader2, Zap, Shapes, SquareArrowOutUpRight } from 'lucide-react';
+import { GripVertical, Loader2, Zap, Shapes, SquareArrowOutUpRight, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ZDClient from '@/lib/ZDClient';
 import { createNewWorkflow } from '@/lib/workflow-utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useIntegration } from '@/context/integration-context';
 
 export type NewWorkflowData = {
   name: string;
@@ -31,8 +32,9 @@ type NewWorkflowDialogProps = {
 };
 
 export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCreate }: NewWorkflowDialogProps) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+  const { selectedIntegrationObject, setSelectedIntegrationObject } = useIntegration();
+  const [name, setName] = useState(selectedIntegrationObject?.name || '');
+  const [description, setDescription] = useState(selectedIntegrationObject?.description || '');
   const [jobspecName, setJobspecName] = useState('');
   const [eventSource, setEventSource] = useState('');
   const [eventType, setEventType] = useState('');
@@ -40,7 +42,6 @@ export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCrea
   const [showInstallationDetails, setShowInstallationDetails] = useState(false);
   const [installationDetails, setInstallationDetails] = useState<any>({});
   const [width, setWidth] = useState(640);
-
   const isResizing = useRef(false);
   const { toast } = useToast();
 
@@ -110,6 +111,16 @@ export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCrea
     loadAppParams();
   }, [isClientInitialized == true]);
 
+  /**
+   * Handle selectedIntegrationObject change
+   */
+  useEffect(() => {
+    if (selectedIntegrationObject) {
+      setName(selectedIntegrationObject.name || '');
+      setDescription(selectedIntegrationObject.description || '');
+    }
+  }, [selectedIntegrationObject]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -167,10 +178,25 @@ export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCrea
     setLoadingIntegration(true);
 
     try {
-      // Call the "createIntegration" method from ZDClient
-      const createIntegrationResponse = await ZDClient.createIntegration(name, {
-        description: description,
-      });
+      let createIntegrationResponse;
+      if (selectedIntegrationObject === null) {
+        // Call the "createIntegration" method for new integration
+        createIntegrationResponse = await ZDClient.createIntegration(name, {
+          description: description,
+        });
+      } else {
+        // Regenerate integration token if existing integration is present
+        const generateNewIntegrationTokenResponse = await ZDClient.generateNewIntegrationToken(
+          selectedIntegrationObject.zendesk_oauth_client.id
+        );
+        createIntegrationResponse = {
+          ...selectedIntegrationObject,
+          zendesk_oauth_client: {
+            ...selectedIntegrationObject.zendesk_oauth_client,
+            secret: generateNewIntegrationTokenResponse.client.secret,
+          },
+        };
+      }
 
       // Call the "createBearerToken" method from ZDClient
       const createBearerTokenResponse = await ZDClient.createBearerToken({
@@ -277,18 +303,105 @@ export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCrea
       </SheetHeader>
       <Separator />
       <ScrollArea className='flex-1 -mx-6 px-6'>
-        <div className='space-y-4 py-6'>
-          <div className='space-y-2 rounded-md border p-4'>
-            <pre className='max-h-96 overflow-auto whitespace-pre-wrap break-all text-xs font-mono'>
-              {JSON.stringify(installationDetails, null, 2)}
-            </pre>
+        <div className='space-y-4 pb-6'>
+          {/* Integration Details */}
+          <div className='space-y-2'>
+            <h4 className='font-medium text-foreground flex items-center gap-2'>Integration Details</h4>
+            <div className='space-y-3 rounded-md border p-4 bg-muted/30'>
+              <div className='grid gap-1'>
+                <Label className='text-xs text-muted-foreground'>Name</Label>
+                <p className='text-sm font-mono bg-background px-2 py-1.5 rounded border'>{installationDetails.name}</p>
+              </div>
+              <div className='grid gap-1'>
+                <Label className='text-xs text-muted-foreground'>Description</Label>
+                <p className='text-sm bg-background px-2 py-1.5 rounded border'>{installationDetails.description}</p>
+              </div>
+              {/* Integration Response */}
+              {installationDetails.integrationResponse && (
+                <>
+                  <div className='grid gap-1'>
+                    <Label className='text-xs text-muted-foreground'>Client ID</Label>
+                    <p className='text-sm font-mono bg-background px-2 py-1.5 rounded border break-all'>
+                      {installationDetails.integrationResponse.zendesk_oauth_client?.id}
+                    </p>
+                  </div>
+                  <div className='grid gap-1'>
+                    <Label className='text-xs text-muted-foreground'>Identifier</Label>
+                    <p className='text-sm font-mono bg-background px-2 py-1.5 rounded border break-all'>
+                      {installationDetails.integrationResponse.zendesk_oauth_client?.identifier}
+                    </p>
+                  </div>
+                  <div className='grid gap-1'>
+                    <Label className='text-xs text-muted-foreground'>Client Secret</Label>
+                    <p className='text-sm font-mono bg-background px-2 py-1.5 rounded border break-all'>
+                      {installationDetails.integrationResponse.zendesk_oauth_client?.secret}
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
+
+          {/* JobSpec Details */}
+          <div className='space-y-2'>
+            <h4 className='font-medium text-foreground'>JobSpec Configuration</h4>
+            <div className='space-y-3 rounded-md border p-4 bg-muted/30'>
+              <div className='grid gap-1'>
+                <Label className='text-xs text-muted-foreground'>JobSpec Name</Label>
+                <p className='text-sm font-mono bg-background px-2 py-1.5 rounded border'>
+                  {installationDetails.jobspecName}
+                </p>
+              </div>
+              <div className='grid gap-1'>
+                <Label className='text-xs text-muted-foreground'>Event Source</Label>
+                <p className='text-sm font-mono bg-background px-2 py-1.5 rounded border'>
+                  {installationDetails.eventSource}
+                </p>
+              </div>
+              <div className='grid gap-1'>
+                <Label className='text-xs text-muted-foreground'>Event Type</Label>
+                <p className='text-sm font-mono bg-background px-2 py-1.5 rounded border'>
+                  {installationDetails.eventType}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* OAuth Client Details */}
+          {installationDetails.oauthClientResponse && (
+            <div className='space-y-2'>
+              <h4 className='font-medium text-foreground'>OAuth Client</h4>
+              <div className='space-y-3 rounded-md border p-4 bg-muted/30'>
+                <div className='grid gap-1'>
+                  <Label className='text-xs text-muted-foreground'>UUID</Label>
+                  <p className='text-sm font-mono bg-background px-2 py-1.5 rounded border break-all'>
+                    {installationDetails.oauthClientResponse.uuid}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Bearer Token */}
+          {installationDetails.bearerTokenResponse && (
+            <div className='space-y-2'>
+              <h4 className='font-medium text-foreground'>Bearer Token</h4>
+              <div className='space-y-3 rounded-md border p-4 bg-muted/30'>
+                <div className='grid gap-1'>
+                  <Label className='text-xs text-muted-foreground'>Token</Label>
+                  <p className='text-sm font-mono bg-background px-2 py-1.5 rounded border break-all'>
+                    {installationDetails.bearerTokenResponse.token?.full_token}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </ScrollArea>
       <SheetFooter>
         <Button type='button' onClick={createSampleBundle} disabled={loadingIntegration}>
-          {loadingIntegration ? <Loader2 className='mr-1 h-4 w-4 animate-spin' /> : null}
-          {loadingIntegration ? 'Saving...' : 'Continue'}
+          {loadingIntegration ? <Loader2 className='h-4 w-4 animate-spin' /> : <ArrowRight className='h-4 w-4' />}
+          {loadingIntegration ? 'Saving...' : 'Continue with bundle installation'}
         </Button>
       </SheetFooter>
     </>
@@ -312,7 +425,14 @@ export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCrea
           <div className='space-y-6 py-6'>
             <div className='space-y-2'>
               <h4 className='font-medium text-foreground'>Workflow Details</h4>
-              <div className='space-y-4 rounded-md border p-4'>
+              {selectedIntegrationObject !== null && (
+                <p className='text-xs text-muted-foreground mt-1 border-l-4 pl-3 border-orange-500 bg-orange-500/10 rounded-r-md  py-3'>
+                  <span className='font-semibold block text-foreground'>NOTE:</span>
+                  Since this Integrations already exists, a New Token will be generated and some fields are pre-filled
+                  and cannot be edited.
+                </p>
+              )}
+              <div className='space-y-4 rounded-md border p-4 bg-muted/30'>
                 <div className='grid w-full items-center gap-1.5'>
                   <Label htmlFor='workflow-name'>Integration Name</Label>
                   <Input
@@ -320,7 +440,7 @@ export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCrea
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder='e.g., my-awesome-integration'
-                    autoFocus
+                    disabled={selectedIntegrationObject !== null}
                   />
                 </div>
                 <div className='grid w-full items-center gap-1.5'>
@@ -330,6 +450,7 @@ export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCrea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder='A short description of what this ZIS does.'
+                    disabled={selectedIntegrationObject !== null}
                   />
                 </div>
               </div>
@@ -337,7 +458,7 @@ export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCrea
 
             <div className='space-y-2'>
               <h4 className='font-medium text-foreground'>JobSpec Details</h4>
-              <div className='space-y-4 rounded-md border p-4'>
+              <div className='space-y-4 rounded-md border p-4 bg-muted/30'>
                 <div className='grid w-full items-center gap-1.5'>
                   <Label htmlFor='jobspec-name'>JobSpec Name</Label>
                   <Input

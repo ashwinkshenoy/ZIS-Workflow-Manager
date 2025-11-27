@@ -66,8 +66,6 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
         setConfigs(configData);
         setRawJson(JSON.stringify(configData, null, 2));
         setIsJsonValid(true);
-      } else {
-        setError('No configuration found for this integration. The API response was empty.');
       }
     } catch (err: any) {
       console.error('Failed to fetch configs:', err);

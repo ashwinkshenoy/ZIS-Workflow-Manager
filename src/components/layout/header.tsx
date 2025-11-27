@@ -67,11 +67,17 @@ export function AppHeader({
   const [isExportOpen, setExportOpen] = useState(false);
   const [isAboutOpen, setAboutOpen] = useState(false);
   const showFlowSelector = availableFlows.length > 1;
-  const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSwitching, setIsSwitching] = useState(false);
   const [isBundleSaving, setIsBundleSaving] = useState(false);
-  const { selectedIntegration, setSelectedIntegration } = useIntegration();
+  const {
+    selectedIntegration,
+    setSelectedIntegration,
+    setSelectedIntegrationObject,
+    allIntegrations,
+    setAllIntegrations,
+  } = useIntegration();
+
   const { toast } = useToast();
 
   useEffect(() => {
@@ -79,7 +85,7 @@ export function AppHeader({
       setIsLoading(true);
       try {
         const response = await ZDClient.getIntegrations();
-        setIntegrations(response.integrations);
+        setAllIntegrations(response.integrations);
       } catch (error) {
         if (error instanceof Error) {
           toast({
@@ -100,6 +106,7 @@ export function AppHeader({
    */
   const resetFlow = () => {
     setSelectedIntegration(null);
+    setSelectedIntegrationObject(null);
     onWorkflowReset();
   };
 
@@ -111,6 +118,9 @@ export function AppHeader({
     if (!integrationName) return;
     setIsSwitching(true);
     setSelectedIntegration(integrationName);
+    // Set the selected integration object
+    const selectedIntegrationObj = allIntegrations.find((integration) => integration.name === integrationName) || null;
+    setSelectedIntegrationObject(selectedIntegrationObj);
 
     try {
       // Step 1: Fetch bundles for the integration to get the UUID
@@ -189,7 +199,7 @@ export function AppHeader({
                 <SelectValue placeholder={isLoading ? 'Loading integrations...' : 'Select an integration'} />
               </SelectTrigger>
               <SelectContent>
-                {integrations.map((integration) => (
+                {allIntegrations.map((integration) => (
                   <SelectItem key={integration.name} value={integration.name}>
                     {integration.name}
                   </SelectItem>
@@ -229,7 +239,7 @@ export function AppHeader({
             {isBundleSaving ? 'Saving...' : 'Save'}
           </Button>
 
-          <Button variant='outline' size='sm' onClick={onManageActions}>
+          <Button variant='outline' size='sm' onClick={onManageActions} disabled={!workflow}>
             <SlidersHorizontal className='mr-1 h-4 w-4' />
             Action
           </Button>

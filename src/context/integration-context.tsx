@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, ReactNode } from 'react';
+import type { Integration } from '@/lib/types';
 
 /**
  * Type definition for the Integration context value
@@ -10,6 +11,10 @@ import { createContext, useContext, useState, ReactNode } from 'react';
 type IntegrationContextType = {
   selectedIntegration: string | null;
   setSelectedIntegration: (integrationName: string | null) => void;
+  selectedIntegrationObject: Integration | null;
+  setSelectedIntegrationObject: (integrationObject: Integration | null) => void;
+  allIntegrations: Integration[];
+  setAllIntegrations: (integrations: Integration[]) => void;
 };
 
 /**
@@ -31,9 +36,19 @@ const IntegrationContext = createContext<IntegrationContextType | undefined>(und
  */
 export function IntegrationProvider({ children }: { children: ReactNode }) {
   const [selectedIntegration, setSelectedIntegration] = useState<string | null>(null);
+  const [selectedIntegrationObject, setSelectedIntegrationObject] = useState<Integration | null>(null);
+  const [allIntegrations, setAllIntegrations] = useState<Integration[]>([]);
 
   return (
-    <IntegrationContext.Provider value={{ selectedIntegration, setSelectedIntegration }}>
+    <IntegrationContext.Provider
+      value={{
+        selectedIntegration,
+        setSelectedIntegration,
+        selectedIntegrationObject,
+        setSelectedIntegrationObject,
+        allIntegrations,
+        setAllIntegrations,
+      }}>
       {children}
     </IntegrationContext.Provider>
   );

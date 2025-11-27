@@ -264,6 +264,21 @@ const ZDClient = {
   },
 
   /**
+   * Generate new integration token for a given integrationId.
+   * @param {string} integrationId
+   * @returns {Promise<any>}
+   */
+  async generateNewIntegrationToken(integrationId) {
+    return this.request(
+      `/api/v2/oauth/clients/${integrationId}/generate_secret`,
+      {},
+      {
+        method: 'PUT',
+      }
+    );
+  },
+
+  /**
    * Create a new integration for a given integrationKey with the provided payload.
    * @param {string} integrationKey
    * @param {Object} payload
