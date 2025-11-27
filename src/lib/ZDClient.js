@@ -38,9 +38,6 @@ const ZDClient = {
     initPromise = (async () => {
       const { default: ZAFClient } = await import('zendesk_app_framework_sdk');
       CLIENT = await ZAFClient.init();
-      // await this.events.ON_APP_REGISTERED((data) => {
-      //   console.log('App registered:', data);
-      // });
 
       // Set color scheme from settings
       CLIENT.on('colorScheme.changed', (colorScheme) => this.setAppTheme(colorScheme));

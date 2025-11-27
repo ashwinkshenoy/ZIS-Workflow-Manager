@@ -90,7 +90,7 @@ export function AppHeader({
         if (error instanceof Error) {
           toast({
             variant: 'destructive',
-            title: 'Failed to load integrations',
+            title: 'Failed to load integrations or no integrations found.',
             description: error.message,
           });
         }
