@@ -172,14 +172,23 @@ export function AppHeader({
         title: 'Saved',
         description: `Successfully saved ZIS: "${selectedIntegration}".`,
       });
-    } catch (error) {
-      if (error instanceof Error) {
-        toast({
-          variant: 'destructive',
-          title: 'Failed to save bundle',
-          description: error.message,
-        });
+    } catch (error: any) {
+      let errorMessage = 'An unknown error occurred';
+
+      // Check if error has the API response format
+      if (error?.responseJSON?.errors && Array.isArray(error.responseJSON.errors)) {
+        errorMessage = error.responseJSON.errors.map((err: any) => err.detail || err.message).join(', ');
+      } else if (error?.message) {
+        errorMessage = error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
       }
+
+      toast({
+        variant: 'destructive',
+        title: 'Failed to save bundle',
+        description: errorMessage,
+      });
     } finally {
       setIsBundleSaving(false);
     }
@@ -231,7 +240,7 @@ export function AppHeader({
 
         {/* Right Side */}
         <div className='flex items-center gap-2'>
-          <Button size='sm' onClick={saveBundle} disabled={isBundleSaving || !workflow}>
+          <Button size='sm' onClick={saveBundle} disabled={isBundleSaving || !selectedIntegration || !workflow}>
             {isBundleSaving ? (
               <Loader2 className='mr-1 h-4 w-4 animate-spin' />
             ) : (

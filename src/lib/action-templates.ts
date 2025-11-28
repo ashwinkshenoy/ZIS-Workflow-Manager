@@ -8,7 +8,8 @@ export type ActionTemplate = {
   defaultConfig: {
     name: string;
     definition: {
-      url: string;
+      url?: string;
+      path?: string;
       method: string;
       headers?: Record<string, string>;
       requestBody?: any;
@@ -31,7 +32,7 @@ const ticketTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.GetTicketsList',
       definition: {
-        url: '/api/v2/tickets.json',
+        path: '/api/v2/tickets.json',
         method: 'GET',
         connectionName: 'zendesk',
         headers: {
@@ -50,7 +51,7 @@ const ticketTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.GetTicket',
       definition: {
-        url: '/api/v2/tickets/{{$.ticket_id}}.json',
+        path: '/api/v2/tickets/{{$.ticket_id}}.json',
         method: 'GET',
         connectionName: 'zendesk',
         headers: {
@@ -69,7 +70,7 @@ const ticketTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.CreateTicket',
       definition: {
-        url: '/api/v2/tickets.json',
+        path: '/api/v2/tickets.json',
         method: 'POST',
         connectionName: 'zendesk',
         headers: {
@@ -97,7 +98,7 @@ const ticketTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.UpdateTicket',
       definition: {
-        url: '/api/v2/tickets/{{$.ticket_id}}.json',
+        path: '/api/v2/tickets/{{$.ticket_id}}.json',
         method: 'PUT',
         connectionName: 'zendesk',
         headers: {
@@ -125,7 +126,7 @@ const ticketTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.UpdateTicketComment',
       definition: {
-        url: '/api/v2/tickets/{{$.ticket_id}}.json',
+        path: '/api/v2/tickets/{{$.ticket_id}}.json',
         method: 'PUT',
         connectionName: 'zendesk',
         headers: {
@@ -152,7 +153,7 @@ const ticketTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.GetTicketCommentsList',
       definition: {
-        url: '/api/v2/tickets/{{$.ticket_id}}/comments.json',
+        path: '/api/v2/tickets/{{$.ticket_id}}/comments.json',
         method: 'GET',
         connectionName: 'zendesk',
         headers: {
@@ -171,7 +172,7 @@ const ticketTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.UpdateTicketAssign',
       definition: {
-        url: '/api/v2/tickets/{{$.ticket_id}}.json',
+        path: '/api/v2/tickets/{{$.ticket_id}}.json',
         method: 'PUT',
         connectionName: 'zendesk',
         headers: {
@@ -196,7 +197,7 @@ const ticketTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.UpdateTicketPriority',
       definition: {
-        url: '/api/v2/tickets/{{$.ticket_id}}.json',
+        path: '/api/v2/tickets/{{$.ticket_id}}.json',
         method: 'PUT',
         connectionName: 'zendesk',
         headers: {
@@ -226,7 +227,7 @@ const userTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.GetUsersList',
       definition: {
-        url: '/api/v2/users.json',
+        path: '/api/v2/users.json',
         method: 'GET',
         connectionName: 'zendesk',
         headers: {
@@ -245,7 +246,7 @@ const userTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.GetUser',
       definition: {
-        url: '/api/v2/users/{{$.user_id}}.json',
+        path: '/api/v2/users/{{$.user_id}}.json',
         method: 'GET',
         connectionName: 'zendesk',
         headers: {
@@ -264,7 +265,7 @@ const userTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.CreateUser',
       definition: {
-        url: '/api/v2/users.json',
+        path: '/api/v2/users.json',
         method: 'POST',
         connectionName: 'zendesk',
         headers: {
@@ -290,7 +291,7 @@ const userTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.UpdateUser',
       definition: {
-        url: '/api/v2/users/{{$.user_id}}.json',
+        path: '/api/v2/users/{{$.user_id}}.json',
         method: 'PUT',
         connectionName: 'zendesk',
         headers: {
@@ -315,7 +316,7 @@ const userTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.GetUsersSearch',
       definition: {
-        url: '/api/v2/users/search.json?query={{$.search_query}}',
+        path: '/api/v2/users/search.json?query={{$.search_query}}',
         method: 'GET',
         connectionName: 'zendesk',
         headers: {
@@ -334,7 +335,7 @@ const userTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.GetUserTicketsRequested',
       definition: {
-        url: '/api/v2/users/{{$.user_id}}/tickets/requested.json',
+        path: '/api/v2/users/{{$.user_id}}/tickets/requested.json',
         method: 'GET',
         connectionName: 'zendesk',
         headers: {
@@ -359,7 +360,7 @@ const organizationTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.GetOrganizationsList',
       definition: {
-        url: '/api/v2/organizations.json',
+        path: '/api/v2/organizations.json',
         method: 'GET',
         connectionName: 'zendesk',
         headers: {
@@ -378,7 +379,7 @@ const organizationTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.GetOrganization',
       definition: {
-        url: '/api/v2/organizations/{{$.organization_id}}.json',
+        path: '/api/v2/organizations/{{$.organization_id}}.json',
         method: 'GET',
         connectionName: 'zendesk',
         headers: {
@@ -397,7 +398,7 @@ const organizationTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.CreateOrganization',
       definition: {
-        url: '/api/v2/organizations.json',
+        path: '/api/v2/organizations.json',
         method: 'POST',
         connectionName: 'zendesk',
         headers: {
@@ -421,7 +422,7 @@ const organizationTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.UpdateOrganization',
       definition: {
-        url: '/api/v2/organizations/{{$.organization_id}}.json',
+        path: '/api/v2/organizations/{{$.organization_id}}.json',
         method: 'PUT',
         connectionName: 'zendesk',
         headers: {
@@ -445,7 +446,7 @@ const organizationTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.GetOrganizationsSearch',
       definition: {
-        url: '/api/v2/organizations/search.json?external_id={{$.external_id}}',
+        path: '/api/v2/organizations/search.json?external_id={{$.external_id}}',
         method: 'GET',
         connectionName: 'zendesk',
         headers: {
@@ -464,7 +465,7 @@ const organizationTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.GetOrganizationTickets',
       definition: {
-        url: '/api/v2/organizations/{{$.organization_id}}/tickets.json',
+        path: '/api/v2/organizations/{{$.organization_id}}/tickets.json',
         method: 'GET',
         connectionName: 'zendesk',
         headers: {
@@ -490,7 +491,7 @@ const customObjectTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.GetCustomObjectsList',
       definition: {
-        url: '/api/v2/custom_objects',
+        path: '/api/v2/custom_objects',
         method: 'GET',
         connectionName: 'zendesk',
         headers: {
@@ -509,7 +510,7 @@ const customObjectTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.GetCustomObject',
       definition: {
-        url: '/api/v2/custom_objects/{{$.custom_object_key}}',
+        path: '/api/v2/custom_objects/{{$.custom_object_key}}',
         method: 'GET',
         connectionName: 'zendesk',
         headers: {
@@ -528,7 +529,7 @@ const customObjectTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.CreateCustomObject',
       definition: {
-        url: '/api/v2/custom_objects',
+        path: '/api/v2/custom_objects',
         method: 'POST',
         connectionName: 'zendesk',
         headers: {
@@ -554,7 +555,7 @@ const customObjectTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.UpdateCustomObject',
       definition: {
-        url: '/api/v2/custom_objects/{{$.custom_object_key}}',
+        path: '/api/v2/custom_objects/{{$.custom_object_key}}',
         method: 'PATCH',
         connectionName: 'zendesk',
         headers: {
@@ -579,7 +580,7 @@ const customObjectTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.DeleteCustomObject',
       definition: {
-        url: '/api/v2/custom_objects/{{$.custom_object_key}}',
+        path: '/api/v2/custom_objects/{{$.custom_object_key}}',
         method: 'DELETE',
         connectionName: 'zendesk',
         headers: {
@@ -600,7 +601,7 @@ const customObjectTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.GetCustomObjectRecordsList',
       definition: {
-        url: '/api/v2/custom_objects/{{$.custom_object_key}}/records',
+        path: '/api/v2/custom_objects/{{$.custom_object_key}}/records',
         method: 'GET',
         connectionName: 'zendesk',
         headers: {
@@ -619,7 +620,7 @@ const customObjectTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.GetCustomObjectRecord',
       definition: {
-        url: '/api/v2/custom_objects/{{$.custom_object_key}}/records/{{$.record_id}}',
+        path: '/api/v2/custom_objects/{{$.custom_object_key}}/records/{{$.record_id}}',
         method: 'GET',
         connectionName: 'zendesk',
         headers: {
@@ -638,7 +639,7 @@ const customObjectTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.CreateCustomObjectRecord',
       definition: {
-        url: '/api/v2/custom_objects/{{$.custom_object_key}}/records',
+        path: '/api/v2/custom_objects/{{$.custom_object_key}}/records',
         method: 'POST',
         connectionName: 'zendesk',
         headers: {
@@ -666,7 +667,7 @@ const customObjectTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.UpdateCustomObjectRecord',
       definition: {
-        url: '/api/v2/custom_objects/{{$.custom_object_key}}/records/{{$.record_id}}',
+        path: '/api/v2/custom_objects/{{$.custom_object_key}}/records/{{$.record_id}}',
         method: 'PATCH',
         connectionName: 'zendesk',
         headers: {
@@ -692,7 +693,7 @@ const customObjectTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.DeleteCustomObjectRecord',
       definition: {
-        url: '/api/v2/custom_objects/{{$.custom_object_key}}/records/{{$.record_id}}',
+        path: '/api/v2/custom_objects/{{$.custom_object_key}}/records/{{$.record_id}}',
         method: 'DELETE',
         connectionName: 'zendesk',
         headers: {
@@ -713,7 +714,7 @@ const customObjectTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.SearchCustomObjectRecords',
       definition: {
-        url: '/api/v2/custom_objects/{{$.custom_object_key}}/records/search?query={{$.search_query}}',
+        path: '/api/v2/custom_objects/{{$.custom_object_key}}/records/search?query={{$.search_query}}',
         method: 'GET',
         connectionName: 'zendesk',
         headers: {
@@ -732,7 +733,7 @@ const customObjectTemplates: ActionTemplate[] = [
     defaultConfig: {
       name: 'Zendesk.FilteredSearchCustomObjectRecords',
       definition: {
-        url: '/api/v2/custom_objects/{{$.custom_object_key}}/records/search',
+        path: '/api/v2/custom_objects/{{$.custom_object_key}}/records/search',
         method: 'POST',
         connectionName: 'zendesk',
         headers: {
