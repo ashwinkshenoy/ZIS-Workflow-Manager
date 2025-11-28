@@ -115,7 +115,7 @@ export function WorkflowNode({ data, selected, id, isStartNode }: CustomNodeProp
             size='icon'
             className={cn(
               'absolute top-1/2 -right-8 -translate-y-1/2 h-7 w-7 transition-opacity',
-              'opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100'
+              'data-[state=open]:bg-slate-200'
             )}
             onClick={handleMenuClick}>
             <MoreHorizontal className='h-4 w-4 text-muted-foreground' />

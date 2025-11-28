@@ -13,8 +13,12 @@ export function AboutDialog({ isOpen, onClose }: AboutDialogProps) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className='sm:max-w-lg'>
         <DialogHeader>
-          <DialogTitle>About ZIS Workflow Manager</DialogTitle>
-          <DialogDescription>Developed by Zendesk Professional Services ❤️</DialogDescription>
+          <DialogTitle>About</DialogTitle>
+          <DialogDescription>
+            ZIS Workflow Manager
+            <br />
+            Developed by Zendesk Professional Services ❤️
+          </DialogDescription>
         </DialogHeader>
         <div className='flex flex-col gap-4 py-4'>
           <div>

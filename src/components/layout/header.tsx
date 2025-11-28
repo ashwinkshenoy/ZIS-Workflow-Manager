@@ -21,7 +21,7 @@ import type { Integration, Workflow as WorkflowType, Bundle } from '@/lib/types'
 import { Button } from '@/components/ui/button';
 import { ImportDialog } from '@/components/workflow/import-dialog';
 import { ExportDialog } from '@/components/workflow/export-dialog';
-import { AboutDialog } from './about-dialog';
+import { AboutDialog } from '../about/about-dialog';
 import { ThemeToggle } from './theme-toggle';
 import {
   DropdownMenu,
