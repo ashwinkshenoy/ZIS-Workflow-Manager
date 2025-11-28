@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
   output: 'export',
 
   // Zendesk app specific
-  distDir: 'dist/assets',
+  distDir: 'out/assets',
 
   // ✅ only add './' in production else HMR will break (Zendesk app specific)
   assetPrefix: isProd ? './' : undefined,

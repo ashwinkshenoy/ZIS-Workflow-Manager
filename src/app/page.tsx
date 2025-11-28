@@ -32,7 +32,6 @@ export default function Home() {
   const [isConfigsSidebarOpen, setConfigsSidebarOpen] = useState(false);
   const [nodeToDelete, setNodeToDelete] = useState<string | null>(null);
   const [isNewWorkflowDialogOpen, setNewWorkflowDialogOpen] = useState(false);
-  const [isClientInitialized, setIsClientInitialized] = useState(false);
   const [isEditWorkflowDialogOpen, setEditWorkflowDialogOpen] = useState(false);
   const [isNewFlowDialogOpen, setNewFlowDialogOpen] = useState(false);
   const { selectedIntegration, setSelectedIntegration } = useIntegration();
@@ -41,21 +40,6 @@ export default function Home() {
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-
-  // Initialize ZDClient and set up event listener
-  useEffect(() => {
-    (async () => {
-      const client = await ZDClient.init();
-      if (client) {
-        ZDClient.events.ON_APP_REGISTERED((data: any) => {
-          console.log('App registered:', data);
-        });
-      }
-      const colorScheme = await ZDClient.get('colorScheme');
-      ZDClient.setAppTheme(colorScheme);
-      setIsClientInitialized(true);
-    })();
-  }, []);
 
   useEffect(() => {
     if (workflow) {
@@ -218,6 +202,75 @@ export default function Home() {
     [setWorkflow, selectedFlowName]
   );
 
+  const handleNodeAddBelow = useCallback(
+    (sourceId: string, nodeType: 'Action' | 'Choice' | 'Pass' | 'Succeed' | 'Fail' | 'Wait') => {
+      setWorkflow((currentWorkflow) => {
+        if (!currentWorkflow || !selectedFlowName) return null;
+
+        const newWorkflow = JSON.parse(JSON.stringify(currentWorkflow)) as Workflow;
+        const currentFlow = newWorkflow.resources[selectedFlowName] as ZISFlow | undefined;
+        if (!currentFlow) return newWorkflow;
+
+        const currentStates = currentFlow.properties.definition.States;
+        const currentSourceNode = currentStates[sourceId];
+
+        if (!currentSourceNode) return newWorkflow;
+
+        const currentTargetId = ('Next' in currentSourceNode && currentSourceNode.Next) || null;
+
+        const newNodeId = getNextNodeId(Object.keys(currentStates));
+
+        // Create the new node
+        let newNode: ZISState;
+        if (nodeType === 'Action') {
+          newNode = {
+            Comment: 'New Action Step',
+            Type: 'Action',
+            ActionName: '',
+            Parameters: {},
+            Next: currentTargetId || '',
+          };
+        } else if (nodeType === 'Choice') {
+          newNode = { Comment: 'New Choice Step', Type: 'Choice', Choices: [], Default: currentTargetId || '' };
+        } else if (nodeType === 'Succeed') {
+          newNode = { Comment: 'New Success Step', Type: 'Succeed', Message: 'Workflow finished successfully.' };
+        } else if (nodeType === 'Fail') {
+          newNode = {
+            Comment: 'New Fail Step',
+            Type: 'Fail',
+            Error: 'Workflow failed',
+            Cause: 'An unexpected error occurred.',
+          };
+        } else if (nodeType === 'Wait') {
+          newNode = { Comment: 'New Wait Step', Type: 'Wait', Seconds: 10, Next: currentTargetId || '' };
+        } else {
+          // Pass
+          newNode = {
+            Comment: 'New Pass Step',
+            Type: 'Pass',
+            Result: {},
+            ResultPath: '$.',
+            Next: currentTargetId || '',
+          };
+        }
+        currentStates[newNodeId] = newNode;
+
+        // Update the source node to point to the new node
+        if ('Next' in currentSourceNode) {
+          currentSourceNode.Next = newNodeId;
+        } else if ('Default' in currentSourceNode && currentSourceNode.Type === 'Choice') {
+          // This is tricky, we'd need to know which path was taken. For now, assume it's the `Next` path for non-choice nodes.
+          // For now, let's just handle Next. If the button is on a choice node, it should maybe be disabled or smarter.
+        } else {
+          (currentSourceNode as any).Next = newNodeId;
+        }
+
+        return newWorkflow;
+      });
+    },
+    [selectedFlowName, setWorkflow]
+  );
+
   const requestNodeDelete = useCallback((nodeId: string) => {
     setNodeToDelete(nodeId);
   }, []);
@@ -241,12 +294,13 @@ export default function Home() {
           data={{
             ...props.data,
             onNodeDelete: requestNodeDelete,
+            onNodeAddBelow: handleNodeAddBelow,
           }}
           isStartNode={props.id === memoizedStartAt}
         />
       ),
     }),
-    [requestNodeDelete, memoizedStartAt]
+    [requestNodeDelete, handleNodeAddBelow, memoizedStartAt]
   );
 
   const edgeTypes = useMemo(() => ({ 'add-node-edge': AddNodeEdge }), []);
@@ -542,7 +596,7 @@ export default function Home() {
     const nodeToDeleteData = States[nodeId];
     if (!nodeToDeleteData) return;
 
-    let targetNodeId: string | undefined;
+    let targetNodeId: string | undefined | null;
 
     if (nodeToDeleteData.Type === 'Choice') {
       targetNodeId = nodeToDeleteData.Default;
@@ -560,14 +614,9 @@ export default function Home() {
       targetNodeId = nodeToDeleteData.Next;
     }
 
-    if (!targetNodeId && nodeToDeleteData.Type !== 'Succeed' && nodeToDeleteData.Type !== 'Fail') {
-      toast({
-        variant: 'destructive',
-        title: 'Deletion Failed',
-        description: `Cannot automatically delete this node as it's an end state. Please re-wire the parent node manually first.`,
-      });
-      setNodeToDelete(null);
-      return;
+    if (targetNodeId === undefined) {
+      // This covers newly added nodes, Succeed, and Fail nodes.
+      targetNodeId = null;
     }
 
     // Find all nodes that point to the node we are deleting
@@ -585,18 +634,18 @@ export default function Home() {
       }
     }
 
-    // Re-wire parent nodes to point to the target node
+    // Re-wire parent nodes to point to the target node or to an empty string if it's the new end of a path
     parentNodes.forEach(([parentId, parentState]) => {
       if (States[parentId].Next === nodeId) {
-        States[parentId].Next = targetNodeId;
+        States[parentId].Next = targetNodeId ?? '';
       }
       if (States[parentId].Default === nodeId) {
-        States[parentId].Default = targetNodeId;
+        States[parentId].Default = targetNodeId ?? '';
       }
       if (States[parentId].Type === 'Choice' && States[parentId].Choices) {
         States[parentId].Choices.forEach((choice: any) => {
           if (choice.Next === nodeId) {
-            choice.Next = targetNodeId;
+            choice.Next = targetNodeId ?? '';
           }
         });
       }
@@ -672,7 +721,6 @@ export default function Home() {
         isOpen={isNewWorkflowDialogOpen}
         onClose={() => setNewWorkflowDialogOpen(false)}
         onCreate={handleWorkflowCreate}
-        isClientInitialized={isClientInitialized}
       />
       <EditWorkflowDialog
         isOpen={isEditWorkflowDialogOpen}

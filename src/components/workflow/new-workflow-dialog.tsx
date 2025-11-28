@@ -26,17 +26,16 @@ export type NewWorkflowData = {
 
 type NewWorkflowDialogProps = {
   isOpen: boolean;
-  isClientInitialized: boolean;
   onClose: () => void;
   onCreate: (data: NewWorkflowData) => void;
 };
 
-export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCreate }: NewWorkflowDialogProps) {
-  const { selectedIntegrationObject, setSelectedIntegrationObject } = useIntegration();
+export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDialogProps) {
+  const { selectedIntegrationObject, setSelectedIntegration } = useIntegration();
   const [name, setName] = useState(selectedIntegrationObject?.name || '');
   const [description, setDescription] = useState(selectedIntegrationObject?.description || '');
   const [jobspecName, setJobspecName] = useState('');
-  const [eventSource, setEventSource] = useState('');
+  const [eventSource, setEventSource] = useState('support');
   const [eventType, setEventType] = useState('');
   const [loadingIntegration, setLoadingIntegration] = useState(false);
   const [showInstallationDetails, setShowInstallationDetails] = useState(false);
@@ -68,7 +67,8 @@ export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCrea
   }, []);
 
   useEffect(() => {
-    if (isOpen) {
+    const isSheetOpen = isOpen || showInstallationDetails;
+    if (isSheetOpen) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
     } else {
@@ -79,17 +79,13 @@ export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCrea
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isOpen, handleMouseMove, handleMouseUp]);
+  }, [isOpen, showInstallationDetails, handleMouseMove, handleMouseUp]);
 
   /**
-   * Show installation details if returning from OAuth flow
+   * Show installation details if returning from OAuth flow or if closed while loading
    */
   useEffect(() => {
-    if (!isClientInitialized) return;
-
     const loadAppParams = async () => {
-      console.log('here: new-workflow-dialog');
-
       const appParams = await ZDClient.appParams();
       console.log('appParams:', appParams);
 
@@ -105,11 +101,12 @@ export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCrea
         parsedData.isLoading = false;
         setShowInstallationDetails(true);
         setInstallationDetails(parsedData);
+        setSelectedIntegration(integrationName);
       }
     };
 
     loadAppParams();
-  }, [isClientInitialized == true]);
+  }, []);
 
   /**
    * Handle selectedIntegrationObject change
@@ -121,6 +118,9 @@ export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCrea
     }
   }, [selectedIntegrationObject]);
 
+  /**
+   * Handles form submission for creating a new workflow
+   */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -158,13 +158,18 @@ export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCrea
   };
 
   /**
+   * Prevents the dialog from closing when clicking outside of it
+   */
+  const preventDialogClose = (event: any): void => {
+    event.preventDefault();
+  };
+
+  /**
    * Creates a new integration with the provided details.
    * This function interacts with the ZDClient to create the integration,
    * bearer token, OAuth client, and starts the OAuth flow.
    */
   const createIntegration = async () => {
-    console.log('Creating simple integration...');
-
     // Basic validation
     if (!name.trim() || !description.trim() || !jobspecName.trim() || !eventSource.trim() || !eventType.trim()) {
       toast({
@@ -217,6 +222,11 @@ export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCrea
         default_scopes: 'zis:read zis:write',
       });
 
+      // Get app name from ZDClient.app.settings and lowercase it and replace space with hyphens
+      const appSettings = ZDClient.app.settings as any;
+      const appName = appSettings.title?.toLowerCase().replace(/\s+/g, '-') || 'zis-workflow-manager';
+      const isProd = ZDClient.app.isProduction;
+
       // Call "startOauthFlow" method from ZDClient
       const { redirect_url: redirectURL } = await ZDClient.startOauthFlow(name, full_token, {
         allow_offline_access: true,
@@ -224,7 +234,7 @@ export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCrea
         oauth_client_uuid: createOauthClientResponse.uuid,
         origin_oauth_redirect_url: `https://${
           ZDClient.app.subdomain
-        }.zendesk.com/agent/apps/zis-workflow-manager?zcli_apps=true&name=${encodeURIComponent(name)}`,
+        }.zendesk.com/agent/apps/${appName}?name=${encodeURIComponent(name)}${!isProd ? '&zcli_apps=true' : ''}`,
         permission_scopes: 'read write zis:read zis:write',
         oauth_url_subdomain: ZDClient.app.subdomain,
       });
@@ -274,7 +284,6 @@ export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCrea
       // Call createSampleWorkflowBundle from ZDClient
       await ZDClient.saveBundle(name, newWorkflowBundle);
 
-      setShowInstallationDetails(false);
       onCreate({
         name,
         description,
@@ -282,8 +291,9 @@ export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCrea
         eventSource,
         eventType,
       });
+      setShowInstallationDetails(false);
     } catch (error) {
-      console.log('Create Sample Bundle Error', error);
+      console.log('Create Bundle Error', error);
     } finally {
       setLoadingIntegration(false);
     }
@@ -388,7 +398,7 @@ export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCrea
               <h4 className='font-medium text-foreground'>Bearer Token</h4>
               <div className='space-y-3 rounded-md border p-4 bg-muted/30'>
                 <div className='grid gap-1'>
-                  <Label className='text-xs text-muted-foreground'>Token</Label>
+                  <Label className='text-xs text-muted-foreground'>Full Token</Label>
                   <p className='text-sm font-mono bg-background px-2 py-1.5 rounded border break-all'>
                     {installationDetails.bearerTokenResponse.token?.full_token}
                   </p>
@@ -419,9 +429,9 @@ export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCrea
         </SheetTitle>
         <SheetDescription>Define your new workflow and its triggering JobSpec.</SheetDescription>
       </SheetHeader>
-      <form onSubmit={handleSubmit}>
-        <Separator />
-        <ScrollArea className='flex-1 -mx-6 px-6'>
+      <Separator />
+      <ScrollArea className='flex-1 -mx-6 px-6'>
+        <form onSubmit={handleSubmit}>
           <div className='space-y-6 py-6'>
             <div className='space-y-2'>
               <h4 className='font-medium text-foreground'>Workflow Details</h4>
@@ -439,7 +449,7 @@ export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCrea
                     id='workflow-name'
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder='e.g., my-awesome-integration'
+                    placeholder='e.g., my_awesome_integration'
                     disabled={selectedIntegrationObject !== null}
                   />
                 </div>
@@ -500,40 +510,43 @@ export function NewWorkflowDialog({ isOpen, isClientInitialized, onClose, onCrea
               </div>
             </div>
           </div>
-        </ScrollArea>
-        <div className='px-2 py-4 flex justify-between space-x-2 flex-wrap gap-2'>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button type='submit' disabled={loadingIntegration}>
-                  <Shapes className='!h-5 !w-5' />
-                  Create Playground Workflow
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side='bottom'>
-                <p>No integration will be created. Only for playing around with ZIS locally.</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <div className='px-2 py-4 flex justify-between space-x-2 flex-wrap gap-2'>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button type='submit' disabled={loadingIntegration}>
+                    <Shapes className='!h-5 !w-5' />
+                    Create Playground Workflow
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side='bottom'>
+                  <p>No integration will be created. Only for playing around with ZIS locally.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
-          <div className='flex space-x-2'>
-            <Button type='button' variant='link' onClick={onClose} disabled={loadingIntegration}>
-              Cancel
-            </Button>
+            <div className='flex space-x-2'>
+              <Button type='button' variant='link' onClick={onClose} disabled={loadingIntegration}>
+                Cancel
+              </Button>
 
-            <Button type='button' variant='outline' onClick={createIntegration} disabled={loadingIntegration}>
-              {loadingIntegration ? <Loader2 className='mr-1 h-4 w-4 animate-spin' /> : null}
-              {loadingIntegration ? 'Creating Integration...' : 'Create Integration'}
-            </Button>
+              <Button type='button' variant='outline' onClick={createIntegration} disabled={loadingIntegration}>
+                {loadingIntegration ? <Loader2 className='mr-1 h-4 w-4 animate-spin' /> : null}
+                {loadingIntegration ? 'Creating Integration...' : 'Create Integration'}
+              </Button>
+            </div>
           </div>
-        </div>
-      </form>
+        </form>
+      </ScrollArea>
     </>
   );
 
   return (
     <Sheet open={isOpen || showInstallationDetails} onOpenChange={closeDialog}>
-      <SheetContent className='flex flex-col group' style={{ width: `${width}px`, maxWidth: '80vw' }}>
+      <SheetContent
+        className='flex flex-col group'
+        style={{ width: `${width}px`, maxWidth: '80vw' }}
+        onPointerDownOutside={preventDialogClose}>
         <div
           onMouseDown={handleMouseDown}
           className={cn(

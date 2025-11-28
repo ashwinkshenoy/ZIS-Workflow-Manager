@@ -5,15 +5,30 @@ import { cn } from '@/lib/utils';
 import { getIconForNodeType } from '@/lib/icons';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, Network, Trash2, Zap } from 'lucide-react';
+import {
+  MoreHorizontal,
+  Network,
+  Trash2,
+  Plus,
+  Bolt,
+  GitFork,
+  MoveRight,
+  Timer,
+  CheckCircle,
+  XCircle,
+  ArrowDown,
+  Zap,
+} from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Button } from '../ui/button';
 import { NodeProps, Handle, Position } from 'reactflow';
 import type { ZISState } from '@/lib/types';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 // Define the type for the node's data payload extended from ZISState
 type WorkflowNodeData = ZISState & {
   onNodeDelete: (id: string) => void;
+  onNodeAddBelow: (sourceId: string, nodeType: 'Action' | 'Choice' | 'Pass' | 'Succeed' | 'Fail' | 'Wait') => void;
 };
 
 // Extend NodeProps to include the custom isStartNode prop
@@ -23,7 +38,8 @@ interface CustomNodeProps extends NodeProps<WorkflowNodeData> {
 
 export function WorkflowNode({ data, selected, id, isStartNode }: CustomNodeProps) {
   const Icon = isStartNode ? Zap : getIconForNodeType(data.Type);
-  const [open, setOpen] = React.useState(false);
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const [addMenuOpen, setAddMenuOpen] = React.useState(false);
 
   const getBadgeVariant = () => {
     switch (data.Type) {
@@ -45,6 +61,19 @@ export function WorkflowNode({ data, selected, id, isStartNode }: CustomNodeProp
     data.onNodeDelete(id);
   };
 
+  const handleAdd = (nodeType: 'Action' | 'Choice' | 'Pass' | 'Succeed' | 'Fail' | 'Wait') => {
+    data.onNodeAddBelow(id, nodeType);
+    setAddMenuOpen(false);
+  };
+
+  const isTerminalNode = data.Type === 'Succeed' || data.Type === 'Fail';
+
+  // A node has a successor if it has a 'Next' property with a value, or it's a Choice node with a 'Default'
+  const hasSuccessor = !!data.Next || (data.Type === 'Choice' && !!data.Default);
+
+  // Show the "add below" button only if the node is not terminal AND it doesn't already have a successor path.
+  const showAddBelowButton = !isTerminalNode && !hasSuccessor;
+
   const hasCatch = data.Type === 'Action' && data.Catch && data.Catch.length > 0;
 
   return (
@@ -57,6 +86,7 @@ export function WorkflowNode({ data, selected, id, isStartNode }: CustomNodeProp
       {/* These handles are invisible connection points for react-flow */}
       <Handle type='target' position={Position.Top} className='!bg-transparent' />
       <Handle type='source' position={Position.Bottom} className='!bg-transparent' id='next-handle' />
+      <Handle type='source' position={Position.Right} className='!bg-transparent' />
 
       {hasCatch && <Handle type='source' position={Position.Right} id='catch-handle' className='!bg-transparent' />}
 
@@ -78,7 +108,7 @@ export function WorkflowNode({ data, selected, id, isStartNode }: CustomNodeProp
           </div>
         </CardContent>
       </Card>
-      <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
         <DropdownMenuTrigger asChild>
           <Button
             variant='ghost'
@@ -98,6 +128,59 @@ export function WorkflowNode({ data, selected, id, isStartNode }: CustomNodeProp
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {showAddBelowButton && (
+        <div
+          className={cn(
+            'absolute -bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1',
+            addMenuOpen ? 'opacity-100' : 'opacity-50 group-hover:opacity-100 transition-opacity'
+          )}>
+          <ArrowDown className='h-4 w-4 text-muted-foreground/80' />
+          <Popover open={addMenuOpen} onOpenChange={setAddMenuOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                size='icon'
+                className={cn(
+                  'h-6 w-6 rounded-full border-2 bg-background transition-all hover:scale-110 hover:bg-primary hover:text-primary-foreground border-muted-foreground/50 text-muted-foreground/80',
+                  addMenuOpen
+                    ? 'scale-110 border-primary bg-primary text-primary-foreground'
+                    : 'border-muted-foreground/50 text-muted-foreground/80'
+                )}
+                onClick={handleMenuClick}>
+                <Plus className='h-4 w-4' />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className='w-auto p-1' side='bottom' align='center' onClick={handleMenuClick}>
+              <div className='flex flex-col gap-1'>
+                <Button variant='ghost' size='sm' className='justify-start' onClick={() => handleAdd('Action')}>
+                  <Bolt className='mr-2' />
+                  Add Action
+                </Button>
+                <Button variant='ghost' size='sm' className='justify-start' onClick={() => handleAdd('Choice')}>
+                  <GitFork className='mr-2' />
+                  Add Choice
+                </Button>
+                <Button variant='ghost' size='sm' className='justify-start' onClick={() => handleAdd('Pass')}>
+                  <MoveRight className='mr-2' />
+                  Add Pass
+                </Button>
+                <Button variant='ghost' size='sm' className='justify-start' onClick={() => handleAdd('Wait')}>
+                  <Timer className='mr-2' />
+                  Add Wait
+                </Button>
+                <Button variant='ghost' size='sm' className='justify-start' onClick={() => handleAdd('Succeed')}>
+                  <CheckCircle className='mr-2' />
+                  Add Succeed
+                </Button>
+                <Button variant='ghost' size='sm' className='justify-start' onClick={() => handleAdd('Fail')}>
+                  <XCircle className='mr-2' />
+                  Add Fail
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+      )}
     </div>
   );
 }

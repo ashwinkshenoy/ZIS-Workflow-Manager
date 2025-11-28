@@ -68,7 +68,7 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
         setIsJsonValid(true);
       }
     } catch (err: any) {
-      console.error('Failed to fetch configs:', err);
+      console.log('Failed to fetch configs:', err);
       setError(`Failed to fetch configs: ${err.message || 'An unknown error occurred.'}`);
     } finally {
       setIsLoading(false);

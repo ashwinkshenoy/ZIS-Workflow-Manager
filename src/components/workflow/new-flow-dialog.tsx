@@ -29,9 +29,9 @@ export function NewFlowDialog({ isOpen, onClose, onCreate, existingResourceIds }
   const [jobspecName, setJobspecName] = useState('');
   const [eventSource, setEventSource] = useState('');
   const [eventType, setEventType] = useState('');
-  const [width, setWidth] = useState(640);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [width, setWidth] = useState(640);
   const isResizing = useRef(false);
   const { toast } = useToast();
 

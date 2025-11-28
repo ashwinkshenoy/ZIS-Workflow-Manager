@@ -147,8 +147,8 @@ src/
 ## 🔨 Build Commands
 
 - `npm run build:zcli` - Build and package as Zendesk app
-  This will build the app and output the contents in `dist` folder.
-  A zip of the app is created in `dist/tmp/` to upload in zendesk instance.
+  This will build the app and output the contents in `out` folder.
+  A zip of the app is created in `out/tmp/` to upload in zendesk instance.
 
 ## 🌟 Zendesk Integration
 

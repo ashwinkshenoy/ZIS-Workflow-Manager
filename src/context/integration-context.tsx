@@ -44,8 +44,10 @@ export function IntegrationProvider({ children }: { children: ReactNode }) {
       value={{
         selectedIntegration,
         setSelectedIntegration,
+
         selectedIntegrationObject,
         setSelectedIntegrationObject,
+
         allIntegrations,
         setAllIntegrations,
       }}>
@@ -63,7 +65,6 @@ export function IntegrationProvider({ children }: { children: ReactNode }) {
  * @example
  * function MyComponent() {
  *   const { selectedIntegration, setSelectedIntegration } = useIntegration();
- *
  *   return <div>{selectedIntegration}</div>;
  * }
  */

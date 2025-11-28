@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/layout/theme-provider';
 import { IntegrationProvider } from '@/context/integration-context';
+import ClientGate from './client-gate';
 
 export const metadata: Metadata = {
   title: 'ZIS Workflow Manager',
@@ -26,10 +27,12 @@ export default function RootLayout({
       </head>
       <body className='font-body antialiased'>
         <ThemeProvider attribute='class' defaultTheme='system' enableSystem disableTransitionOnChange>
-          <IntegrationProvider>
-            {children}
-            <Toaster />
-          </IntegrationProvider>
+          <ClientGate>
+            <IntegrationProvider>
+              {children}
+              <Toaster />
+            </IntegrationProvider>
+          </ClientGate>
         </ThemeProvider>
       </body>
     </html>

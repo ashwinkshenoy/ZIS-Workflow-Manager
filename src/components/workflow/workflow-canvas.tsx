@@ -3,6 +3,7 @@
 import React, { useMemo, useCallback } from 'react';
 import ReactFlow, {
   Background,
+  BackgroundVariant,
   Controls,
   MiniMap,
   OnNodesChange,
@@ -15,7 +16,6 @@ import 'reactflow/dist/style.css';
 
 import { Button } from '../ui/button';
 import { Plus } from 'lucide-react';
-import type { ZISState } from '@/lib/types';
 
 type WorkflowCanvasProps = {
   nodes: Node[];
@@ -61,7 +61,7 @@ export function WorkflowCanvas({
             <Plus className='mr-2 h-4 w-4' />
             Create Workflow
           </Button>
-          <p className='text-muted-foreground text-sm'>or import an existing workflow.</p>
+          <p className='text-muted-foreground text-sm'>or import an existing workflow to play around.</p>
         </div>
       </div>
     );
@@ -84,9 +84,9 @@ export function WorkflowCanvas({
         className='bg-background'
         proOptions={{ hideAttribution: true }}
         nodesDraggable={false}>
-        <Controls />
+        <Controls showInteractive={false} />
         {/* <MiniMap nodeStrokeWidth={3} zoomable pannable /> */}
-        <Background gap={16} variant='dots' />
+        <Background gap={16} variant={BackgroundVariant.Dots} />
       </ReactFlow>
     </div>
   );

@@ -13,8 +13,8 @@ const foldersToCopy = ['assets', 'translations'];
 // Check for 'prod' argument to adjust output path and copy static folders
 process.argv.forEach((val) => {
   if (val === 'prod') {
-    outputPath = './dist/manifest.json';
-    const outDir = path.resolve('dist');
+    outputPath = './out/manifest.json';
+    const outDir = path.resolve('out');
 
     for (const folder of foldersToCopy) {
       const from = path.resolve(folder);
