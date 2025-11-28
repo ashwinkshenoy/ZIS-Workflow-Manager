@@ -87,7 +87,6 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
   useEffect(() => {
     const loadAppParams = async () => {
       const appParams = await ZDClient.appParams();
-      console.log('appParams:', appParams);
 
       const token = appParams?.verification_token;
       const integrationName = appParams?.name;

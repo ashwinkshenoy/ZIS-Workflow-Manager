@@ -261,14 +261,6 @@ export function AppHeader({
             </DropdownMenuTrigger>
 
             <DropdownMenuContent align='end'>
-              {/* Navigate to Onboarding */}
-              <DropdownMenuItem asChild>
-                <Link href='/onboarding'>
-                  <Info className='mr-2 h-4 w-4' />
-                  <span>Go to Onboarding</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
               {workflow && (
                 <>
                   <DropdownMenuItem onClick={onNewFlow}>
