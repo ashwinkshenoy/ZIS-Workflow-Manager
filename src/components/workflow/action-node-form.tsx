@@ -221,7 +221,7 @@ export function ActionNodeForm({ data, actions, onChange }: ActionNodeFormProps)
       <div className='space-y-2'>
         <h4 className='font-medium text-base'>Error Handling (Catch)</h4>
         <div className='space-y-3 rounded-md border bg-muted/20 p-4'>
-          {data.Catch?.map((catchBlock, index) => (
+          {data.Catch?.map((catchBlock: any, index: any) => (
             <div key={index} className='relative space-y-3 rounded-lg border bg-background p-4'>
               <Button
                 variant='ghost'
