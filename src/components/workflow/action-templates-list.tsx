@@ -40,11 +40,11 @@ export function ActionTemplatesList({ onTemplateSelect }: ActionTemplatesListPro
 
   // Define category order
   const categoryOrder: Array<'Tickets' | 'Users' | 'Organizations' | 'Custom Objects' | 'Generic'> = [
+    'Generic',
     'Tickets',
     'Users',
     'Organizations',
     'Custom Objects',
-    'Generic',
   ];
 
   return (
@@ -80,7 +80,7 @@ export function ActionTemplatesList({ onTemplateSelect }: ActionTemplatesListPro
                 <div className='grid grid-cols-2 gap-3'>
                   {templates.map((template) => (
                     <Card key={template.id} className='p-4 hover:bg-accent/50 transition-colors'>
-                      <div className='space-y-3'>
+                      <div className='space-y-3 flex flex-col justify-between h-full'>
                         <div className='space-y-1'>
                           <h4 className='font-medium text-sm leading-none'>{template.name}</h4>
                           <p className='text-xs text-muted-foreground leading-snug'>{template.description}</p>

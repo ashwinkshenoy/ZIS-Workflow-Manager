@@ -134,8 +134,8 @@ export function ActionNodeForm({ data, actions, onChange }: ActionNodeFormProps)
 
   return (
     <div className='space-y-4'>
-      <div className='grid w-full items-center gap-1.5'>
-        <Label htmlFor='action-name'>ActionName</Label>
+      <div className='grid w-full gap-1.5'>
+        <Label htmlFor='action-name'>Action Name</Label>
         <Select value={actionNameKey} onValueChange={handleActionNameChange}>
           <SelectTrigger id='action-name'>
             <SelectValue placeholder='Select an action' />
@@ -165,11 +165,15 @@ export function ActionNodeForm({ data, actions, onChange }: ActionNodeFormProps)
                       variant='ghost'
                       size='icon'
                       className='absolute top-1 right-1 h-7 w-7'
-                      onClick={() => handleRemoveParameter(paramKey)}>
+                      onClick={() => handleRemoveParameter(paramKey)}
+                      title='Remove Parameter'>
                       <Trash2 className='h-4 w-4 text-muted-foreground' />
                     </Button>
                     <div className='grid w-full items-center gap-1.5'>
-                      <Label htmlFor={`param-key-${index}`}>Key</Label>
+                      <Label htmlFor={`param-key-${index}`}>
+                        Key
+                        <span className='text-xs text-muted-foreground ml-1'>[e.g: variable.$]</span>
+                      </Label>
                       <Input
                         id={`param-key-${index}`}
                         placeholder='Key'

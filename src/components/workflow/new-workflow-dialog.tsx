@@ -111,7 +111,10 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
    * Handle selectedIntegrationObject change
    */
   useEffect(() => {
-    if (selectedIntegrationObject) {
+    setName('');
+    setDescription('');
+
+    if (selectedIntegrationObject !== null) {
       setName(selectedIntegrationObject.name || '');
       setDescription(selectedIntegrationObject.description || '');
     }
@@ -504,6 +507,9 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
                       View documentation
                       <SquareArrowOutUpRight className='h-3 w-3 ml-1 inline-block' />
                     </a>
+                  </p>
+                  <p className='text-xs text-muted-foreground'>
+                    Webhook can be created after creating the integration, under Modify Settings.
                   </p>
                 </div>
               </div>

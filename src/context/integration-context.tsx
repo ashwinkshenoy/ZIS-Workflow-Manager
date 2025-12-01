@@ -15,6 +15,10 @@ type IntegrationContextType = {
   setSelectedIntegrationObject: (integrationObject: Integration | null) => void;
   allIntegrations: Integration[];
   setAllIntegrations: (integrations: Integration[]) => void;
+  isActionsSidebarOpen: boolean;
+  setActionsSidebarOpen: (isOpen: boolean) => void;
+  isConfigsSidebarOpen: boolean;
+  setConfigsSidebarOpen: (isOpen: boolean) => void;
 };
 
 /**
@@ -38,6 +42,8 @@ export function IntegrationProvider({ children }: { children: ReactNode }) {
   const [selectedIntegration, setSelectedIntegration] = useState<string | null>(null);
   const [selectedIntegrationObject, setSelectedIntegrationObject] = useState<Integration | null>(null);
   const [allIntegrations, setAllIntegrations] = useState<Integration[]>([]);
+  const [isActionsSidebarOpen, setActionsSidebarOpen] = useState<boolean>(false);
+  const [isConfigsSidebarOpen, setConfigsSidebarOpen] = useState<boolean>(false);
 
   return (
     <IntegrationContext.Provider
@@ -50,6 +56,12 @@ export function IntegrationProvider({ children }: { children: ReactNode }) {
 
         allIntegrations,
         setAllIntegrations,
+
+        isActionsSidebarOpen,
+        setActionsSidebarOpen,
+
+        isConfigsSidebarOpen,
+        setConfigsSidebarOpen,
       }}>
       {children}
     </IntegrationContext.Provider>

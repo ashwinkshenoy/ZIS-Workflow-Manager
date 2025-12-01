@@ -15,6 +15,7 @@ import ZDClient from '@/lib/ZDClient';
 import { createNewWorkflow, getJobSpecDetails } from '@/lib/workflow-utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useIntegration } from '@/context/integration-context';
+import { WebhookDetails } from './webhook-details';
 import type { Workflow as WorkFlowTypes } from '@/lib/types';
 
 export type EditWorkflowData = {
@@ -99,7 +100,7 @@ export function EditWorkflowDialog({
   }, [isOpen]);
 
   const init = () => {
-    if (selectedIntegration && workflow) {
+    if (selectedIntegration && selectedFlow && workflow) {
       const jobspecDetails = getJobSpecDetails(workflow, selectedFlow || '');
 
       if (jobspecDetails) {
@@ -146,7 +147,7 @@ export function EditWorkflowDialog({
       toast({
         title: 'Workflow updated successfully',
       });
-      onClose();
+      closeDialog();
     } catch (error) {
       if (error instanceof Error) {
         toast({
@@ -233,8 +234,31 @@ export function EditWorkflowDialog({
       </SheetHeader>
       <Separator />
       <ScrollArea className='flex-1 -mx-6 px-6'>
+        {/* Install/ Uninstall Integration */}
+        <div className='space-y-2 mb-5'>
+          <div className='rounded-md border border-red-300 p-4'>
+            <h4 className='font-bold text-foreground'>Danger Zone</h4>
+            <p className='text-sm text-muted-foreground mt-1'>
+              Manage the installation status of ZIS Integration Flow:&nbsp;
+              <span className='font-semibold text-foreground'>{selectedFlow}</span>.
+              <br />
+              Uninstalling will remove the integration from your Zendesk instance.
+            </p>
+            <div className='text-right mt-3'>
+              <Button className='mr-2' onClick={installBundle} disabled={isInstalling}>
+                {isInstalling ? <Loader2 className='h-4 w-4 animate-spin' /> : <Power className='h-4 w-4' />}
+                Install
+              </Button>
+              <Button variant='outline' onClick={uninstallBundle} disabled={isUninstalling}>
+                {isUninstalling ? <Loader2 className='h-4 w-4 animate-spin' /> : <PowerOff className='h-4 w-4' />}
+                Uninstall
+              </Button>
+            </div>
+          </div>
+        </div>
+
         <form onSubmit={handleSubmit}>
-          <div className='space-y-6 pb-6'>
+          <div className='space-y-6 pb-6 mt-3'>
             <div className='space-y-2'>
               <h4 className='font-medium text-foreground'>JobSpec Details</h4>
               <div className='space-y-4 rounded-md border p-4 bg-muted/30'>
@@ -277,12 +301,18 @@ export function EditWorkflowDialog({
                     </a>
                   </p>
                 </div>
+                <WebhookDetails
+                  selectedIntegration={selectedIntegration}
+                  workflow={workflow}
+                  eventSource={eventSource}
+                  eventType={eventType}
+                />
               </div>
             </div>
           </div>
           <div className='px-2 py-4 flex justify-end space-x-2 flex-wrap gap-2'>
             <div className='flex space-x-2'>
-              <Button type='button' variant='link' onClick={onClose} disabled={loadingIntegration}>
+              <Button type='button' variant='link' onClick={closeDialog} disabled={loadingIntegration}>
                 Cancel
               </Button>
               <Button type='submit' disabled={loadingIntegration}>
@@ -292,31 +322,6 @@ export function EditWorkflowDialog({
             </div>
           </div>
         </form>
-
-        <Separator />
-
-        {/* Install/ Uninstall Integration */}
-        <div className='space-y-2 mt-5'>
-          <div className='rounded-md border border-red-300 p-4'>
-            <h4 className='font-bold text-foreground'>Danger Zone</h4>
-            <p className='text-sm text-muted-foreground mt-1'>
-              Manage the installation status of ZIS Integration Flow:&nbsp;
-              <span className='font-semibold text-foreground'>{selectedFlow}</span>.
-              <br />
-              Uninstalling will remove the integration from your Zendesk instance.
-            </p>
-            <div className='text-right mt-3'>
-              <Button className='mr-2' onClick={installBundle} disabled={isInstalling}>
-                {isInstalling ? <Loader2 className='h-4 w-4 animate-spin' /> : <Power className='h-4 w-4' />}
-                Install
-              </Button>
-              <Button variant='outline' onClick={uninstallBundle} disabled={isUninstalling}>
-                {isUninstalling ? <Loader2 className='h-4 w-4 animate-spin' /> : <PowerOff className='h-4 w-4' />}
-                Uninstall
-              </Button>
-            </div>
-          </div>
-        </div>
       </ScrollArea>
     </>
   );

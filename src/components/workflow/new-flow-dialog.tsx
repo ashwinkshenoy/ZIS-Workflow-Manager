@@ -10,6 +10,8 @@ import { Separator } from '../ui/separator';
 import { ScrollArea } from '../ui/scroll-area';
 import { GripVertical, Loader2, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { WebhookDetails } from './webhook-details';
+import { useIntegration } from '@/context/integration-context';
 
 export type NewFlowData = {
   flowResourceKey: string;
@@ -30,6 +32,7 @@ export function NewFlowDialog({ isOpen, onClose, onCreate, existingResourceIds }
   const [eventSource, setEventSource] = useState('');
   const [eventType, setEventType] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { selectedIntegration } = useIntegration();
 
   const [width, setWidth] = useState(640);
   const isResizing = useRef(false);
@@ -183,6 +186,13 @@ export function NewFlowDialog({ isOpen, onClose, onCreate, existingResourceIds }
                       placeholder='e.g: ticket.TagsChanged'
                     />
                   </div>
+
+                  <WebhookDetails
+                    selectedIntegration={selectedIntegration}
+                    workflow={existingResourceIds}
+                    eventSource={eventSource}
+                    eventType={eventType}
+                  />
                 </div>
               </div>
             </div>

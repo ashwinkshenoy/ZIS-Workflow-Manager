@@ -12,7 +12,7 @@ export default function OnboardingPage() {
 
   const handleContinue = useCallback(() => {
     try {
-      localStorage.setItem('onboarding', 'true');
+      localStorage.setItem('onBoarding', 'true');
     } catch (_) {
       // Ignore storage errors; still navigate
     }

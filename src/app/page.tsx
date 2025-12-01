@@ -28,13 +28,19 @@ export default function Home() {
   const [availableFlows, setAvailableFlows] = useState<string[]>([]);
   const [selectedFlowName, setSelectedFlowName] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<Node<ZISState> | null>(null);
-  const [isActionsSidebarOpen, setActionsSidebarOpen] = useState(false);
-  const [isConfigsSidebarOpen, setConfigsSidebarOpen] = useState(false);
   const [nodeToDelete, setNodeToDelete] = useState<string | null>(null);
   const [isNewWorkflowDialogOpen, setNewWorkflowDialogOpen] = useState(false);
   const [isEditWorkflowDialogOpen, setEditWorkflowDialogOpen] = useState(false);
   const [isNewFlowDialogOpen, setNewFlowDialogOpen] = useState(false);
-  const { selectedIntegration, setSelectedIntegration } = useIntegration();
+  const {
+    selectedIntegration,
+    setSelectedIntegration,
+    isActionsSidebarOpen,
+    setActionsSidebarOpen,
+    isConfigsSidebarOpen,
+    setConfigsSidebarOpen,
+    setSelectedIntegrationObject,
+  } = useIntegration();
   const [isDeleteFlowDialogOpen, setDeleteFlowDialogOpen] = useState(false);
   const { toast } = useToast();
 
@@ -479,6 +485,7 @@ export default function Home() {
     handleNodeSelect(null);
     setActionsSidebarOpen(false);
     setSelectedFlowName(null);
+
     // toast({
     //   title: 'Canvas Cleared',
     //   description: 'You can now create a new workflow.',

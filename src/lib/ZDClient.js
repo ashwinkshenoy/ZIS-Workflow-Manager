@@ -364,6 +364,23 @@ const ZDClient = {
       }
     );
   },
+
+  /**
+   * Generate Webhook URL for a given integrationKey.
+   * @param {string} integrationKey
+   * @param {Object} payload
+   * @param {string} fullToken
+   * @returns {Promise<any>}
+   */
+  async createInboundWebhook(integrationKey, payload, fullToken) {
+    return this.request(`/api/services/zis/inbound_webhooks/generic/${integrationKey}`, JSON.stringify(payload), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${fullToken}`,
+      },
+    });
+  },
 };
 
 export default ZDClient;
