@@ -8,6 +8,7 @@
     "manifest": "node build.js",
     "serve:zcli": "zcli apps:server",
     "build:zcli": "npm run build && npm run manifest prod && zcli apps:package ./out",
+    "build:gh": "npm run build && npm run manifest prod",
     "dev": "next dev --turbopack -p 9002",
     "build": "NODE_ENV=production next build",
     "start": "next start",

@@ -32,7 +32,7 @@ jobs:
         run: npm ci
 
       - name: Build app
-        run: npm run build:zcli
+        run: npm run build:gh
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
