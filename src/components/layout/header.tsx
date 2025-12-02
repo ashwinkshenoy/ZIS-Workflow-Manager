@@ -200,7 +200,8 @@ export function AppHeader({
         {/* Left Side */}
         <div className='flex items-center'>
           {/* Integration Selector */}
-          <div className='w-72'>
+          <div className='w-72 relative'>
+            {isSwitching && <Loader2 className=' absolute h-4 w-4 animate-spin top-3 left-[-18px]' />}
             <Select
               onValueChange={handleIntegrationChange}
               disabled={isLoading || isSwitching}
@@ -216,7 +217,6 @@ export function AppHeader({
                 ))}
               </SelectContent>
             </Select>
-            {isSwitching && <Loader2 className='absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin' />}
           </div>
 
           {/* If multiple flows are available, show the flow selector */}
