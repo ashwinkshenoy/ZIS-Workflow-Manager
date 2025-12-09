@@ -95,9 +95,12 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
       const storedData = localStorage.getItem(integrationName);
       if (!storedData) return;
 
-      const parsedData = JSON.parse(storedData);
+      let parsedData = JSON.parse(storedData);
+      parsedData.isLoading = false;
+      parsedData = { ...parsedData, verification_token: token };
+      localStorage.setItem(integrationName, JSON.stringify(parsedData));
+
       if (parsedData && parsedData.isLoading) {
-        parsedData.isLoading = false;
         setShowInstallationDetails(true);
         setInstallationDetails(parsedData);
         setSelectedIntegration(integrationName);
@@ -397,12 +400,18 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
           {/* Bearer Token */}
           {installationDetails.bearerTokenResponse && (
             <div className='space-y-2'>
-              <h4 className='font-medium text-foreground'>Bearer Token</h4>
+              <h4 className='font-medium text-foreground'>Token</h4>
               <div className='space-y-3 rounded-md border p-4 bg-muted/30'>
                 <div className='grid gap-1'>
                   <Label className='text-xs text-muted-foreground'>Full Token</Label>
                   <p className='text-sm font-mono bg-background px-2 py-1.5 rounded border break-all'>
                     {installationDetails.bearerTokenResponse.token?.full_token}
+                  </p>
+                </div>
+                <div className='grid gap-1'>
+                  <Label className='text-xs text-muted-foreground'>Verification Token</Label>
+                  <p className='text-sm font-mono bg-background px-2 py-1.5 rounded border break-all'>
+                    {installationDetails.verification_token}
                   </p>
                 </div>
               </div>

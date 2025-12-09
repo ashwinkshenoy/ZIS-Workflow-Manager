@@ -15,7 +15,7 @@ const manifestData = {
   private: true,
   location: {
     support: {
-      nav_bar: isProd ? 'assets/index.html' : devPath,
+      nav_bar: isProd ? 'https://ashwinshenoy.com/ZIS-Workflow-Manager/assets/index.html' : devPath,
     },
   },
   parameters: [
