@@ -229,7 +229,7 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
 
       // Get app name from ZDClient.app.settings and lowercase it and replace space with hyphens
       const appSettings = ZDClient.app.settings as any;
-      const appName = appSettings.title?.toLowerCase().replace(/\s+/g, '-') || 'zis-workflow-manager';
+      const appName = toHyphenCase(appSettings.title) || 'zis-workflow-manager';
       const isProd = ZDClient.app.isProduction;
 
       // Call "startOauthFlow" method from ZDClient
@@ -275,6 +275,25 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
     } finally {
       setLoadingIntegration(false);
     }
+  };
+
+  /**
+   * Converts a string to hyphen-case
+   * converts spaces and underscores to hyphens and lowercases the string.
+   * converts camelCase or PascalCase to hyphen-case as well.
+   * @param str
+   * @returns
+   */
+  const toHyphenCase = (str: string) => {
+    return (
+      str
+        // Convert camelCase or PascalCase → space before capital letters
+        .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+        // Replace spaces & underscores with hyphens
+        .replace(/[\s_]+/g, '-')
+        // Lowercase final result
+        .toLowerCase()
+    );
   };
 
   /**
