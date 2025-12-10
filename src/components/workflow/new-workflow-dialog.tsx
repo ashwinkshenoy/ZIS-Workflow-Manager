@@ -96,15 +96,15 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
       if (!storedData) return;
 
       let parsedData = JSON.parse(storedData);
-      parsedData.isLoading = false;
       parsedData = { ...parsedData, verification_token: token };
-      localStorage.setItem(integrationName, JSON.stringify(parsedData));
 
       if (parsedData && parsedData.isLoading) {
         setShowInstallationDetails(true);
         setInstallationDetails(parsedData);
         setSelectedIntegration(integrationName);
       }
+      // parsedData.isLoading = false;
+      localStorage.setItem(integrationName, JSON.stringify(parsedData));
     };
 
     loadAppParams();
@@ -287,6 +287,7 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
       console.log('Creating sample bundle...');
       const newWorkflowBundle = createNewWorkflow(name, description, jobspecName, eventSource, eventType);
       // Call createSampleWorkflowBundle from ZDClient
+      createNewConfiguration();
       await ZDClient.saveBundle(name, newWorkflowBundle);
 
       onCreate({
@@ -301,6 +302,32 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
       console.log('Create Bundle Error', error);
     } finally {
       setLoadingIntegration(false);
+    }
+  };
+
+  /**
+   * Creates a new configuration with default settings
+   */
+  const createNewConfiguration = async () => {
+    const { name } = installationDetails;
+    if (!name) return;
+    // Add your default configuration properties here
+    const payload = {
+      scope: `${name}_settings`,
+      config: {
+        debug_webhook_endpoint: 'https://webhook.site/your-unique-endpoint',
+      },
+    };
+    try {
+      await ZDClient.createZisConfigApi(payload, name);
+    } catch (err: any) {
+      console.error('Failed to save configs:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Save Failed',
+        description: err.message || 'An unknown error occurred.',
+        duration: 5000,
+      });
     }
   };
 
@@ -443,7 +470,7 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
       <Separator />
       <ScrollArea className='flex-1 -mx-6 px-6'>
         <form onSubmit={handleSubmit}>
-          <div className='space-y-6 py-6'>
+          <div className='space-y-6 pb-6'>
             <div className='space-y-2'>
               <h4 className='font-medium text-foreground'>Workflow Details</h4>
               {selectedIntegrationObject !== null && (

@@ -283,7 +283,7 @@ export function createFlowResource(
             Type: 'Action',
           },
           'Debug.PostToWebhook': {
-            ActionName: `zis:${integrationKey}:action:post-to-webhook-site`,
+            ActionName: `zis:${integrationKey}:action:Debug.PostToWebhook`,
             Comment: 'Post data external webhook',
             Next: '003.End',
             Parameters: {
@@ -339,7 +339,7 @@ export function createNewWorkflow(
         },
       },
       [flowResourceKey]: createFlowResource(flowResourceKey, integrationKey, configSettingsName),
-      'post-to-webhook-site': {
+      'Debug.PostToWebhook': {
         type: 'ZIS::Action::Http',
         properties: {
           definition: {
@@ -349,7 +349,7 @@ export function createNewWorkflow(
             },
             url: '{{$.endpoint}}',
           },
-          name: 'post-to-webhook-site',
+          name: 'Debug.PostToWebhook',
         },
       },
     },
