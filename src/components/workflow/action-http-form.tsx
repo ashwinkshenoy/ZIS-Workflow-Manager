@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,6 +9,7 @@ import { Button } from '../ui/button';
 import { Plus, Trash2 } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 
 type ActionHttpFormProps = {
   data: ZISActionHttp['properties'];
@@ -21,6 +22,48 @@ type BodyType = 'json' | 'path';
 export function ActionHttpForm({ data, onChange }: ActionHttpFormProps) {
   const definition = data.definition || {};
 
+  // Local state for debounced inputs
+  const [localName, setLocalName] = useState(data.name || '');
+  const [localMethod, setLocalMethod] = useState(definition.method || '');
+  const [localConnectionName, setLocalConnectionName] = useState(definition.connectionName || '');
+
+  // Sync local state when prop changes
+  useEffect(() => {
+    setLocalName(data.name || '');
+  }, [data.name]);
+
+  useEffect(() => {
+    setLocalMethod(definition.method || '');
+  }, [definition.method]);
+
+  useEffect(() => {
+    setLocalConnectionName(definition.connectionName || '');
+  }, [definition.connectionName]);
+
+  // Debounced onChange handlers
+  const debouncedOnChange = useDebouncedCallback(onChange, 300);
+
+  const handleNameChange = (value: string) => {
+    setLocalName(value);
+    debouncedOnChange({ ...data, name: value });
+  };
+
+  const handleMethodChange = (value: string) => {
+    setLocalMethod(value);
+    debouncedOnChange({
+      ...data,
+      definition: { ...definition, method: value },
+    });
+  };
+
+  const handleConnectionNameChange = (value: string) => {
+    setLocalConnectionName(value);
+    debouncedOnChange({
+      ...data,
+      definition: { ...definition, connectionName: value },
+    });
+  };
+
   const handleDefinitionChange = (key: string, value: any) => {
     onChange({
       ...data,
@@ -31,21 +74,49 @@ export function ActionHttpForm({ data, onChange }: ActionHttpFormProps) {
     });
   };
 
+  // Local state for headers
+  const [localHeaders, setLocalHeaders] = useState(definition.headers || []);
+
+  useEffect(() => {
+    setLocalHeaders(definition.headers || []);
+  }, [definition.headers]);
+
   const handleHeaderChange = (index: number, key: 'key' | 'value', value: string) => {
-    const newHeaders = [...(definition.headers || [])];
+    const newHeaders = [...localHeaders];
     newHeaders[index] = { ...newHeaders[index], [key]: value };
-    handleDefinitionChange('headers', newHeaders);
+    setLocalHeaders(newHeaders);
+    debouncedOnChange({
+      ...data,
+      definition: {
+        ...definition,
+        headers: newHeaders,
+      },
+    });
   };
 
   const handleAddHeader = () => {
-    const newHeaders = [...(definition.headers || []), { key: '', value: '' }];
-    handleDefinitionChange('headers', newHeaders);
+    const newHeaders = [...localHeaders, { key: '', value: '' }];
+    setLocalHeaders(newHeaders);
+    onChange({
+      ...data,
+      definition: {
+        ...definition,
+        headers: newHeaders,
+      },
+    });
   };
 
   const handleRemoveHeader = (index: number) => {
-    const newHeaders = [...(definition.headers || [])];
+    const newHeaders = [...localHeaders];
     newHeaders.splice(index, 1);
-    handleDefinitionChange('headers', newHeaders);
+    setLocalHeaders(newHeaders);
+    onChange({
+      ...data,
+      definition: {
+        ...definition,
+        headers: newHeaders,
+      },
+    });
   };
 
   const handleEndpointTypeChange = (type: EndpointType) => {
@@ -75,7 +146,7 @@ export function ActionHttpForm({ data, onChange }: ActionHttpFormProps) {
         newDefinition.path = value;
       }
     }
-    onChange({ ...data, definition: newDefinition });
+    debouncedOnChange({ ...data, definition: newDefinition });
   };
 
   const handleBodyTypeChange = (type: BodyType) => {
@@ -115,6 +186,18 @@ export function ActionHttpForm({ data, onChange }: ActionHttpFormProps) {
   const endpointType: EndpointType = 'url' in definition ? 'url' : 'path';
   const endpointValue = definition.url || definition.path || definition['path.$'] || '';
 
+  // Local state for endpoint to avoid lag
+  const [localEndpoint, setLocalEndpoint] = useState(endpointValue);
+
+  useEffect(() => {
+    setLocalEndpoint(endpointValue);
+  }, [endpointValue]);
+
+  const handleLocalEndpointChange = (value: string) => {
+    setLocalEndpoint(value);
+    handleEndpointChange(value);
+  };
+
   const bodyType: BodyType = 'requestBody.$' in definition ? 'path' : 'json';
   let bodyValue: string;
   if ('requestBody.$' in definition) {
@@ -129,21 +212,17 @@ export function ActionHttpForm({ data, onChange }: ActionHttpFormProps) {
     <div className='space-y-4'>
       <div className='grid w-full items-center gap-1.5'>
         <Label htmlFor='action-name'>Name</Label>
-        <Input id='action-name' value={data.name || ''} onChange={(e) => onChange({ ...data, name: e.target.value })} />
+        <Input id='action-name' value={localName} onChange={(e) => handleNameChange(e.target.value)} />
       </div>
 
       <Separator />
 
       <h4 className='font-medium text-base pt-2'>Definition</h4>
 
-      <div className='pl-4 border-l-2 space-y-4'>
+      <div className='p-4 rounded-md border bg-muted/50 space-y-4'>
         <div className='grid w-full items-center gap-1.5'>
           <Label htmlFor='def-method'>Method</Label>
-          <Input
-            id='def-method'
-            value={definition.method || ''}
-            onChange={(e) => handleDefinitionChange('method', e.target.value)}
-          />
+          <Input id='def-method' value={localMethod} onChange={(e) => handleMethodChange(e.target.value)} />
         </div>
 
         <div className='space-y-2'>
@@ -164,8 +243,8 @@ export function ActionHttpForm({ data, onChange }: ActionHttpFormProps) {
             </RadioGroup>
           </div>
           <Input
-            value={endpointValue}
-            onChange={(e) => handleEndpointChange(e.target.value)}
+            value={localEndpoint}
+            onChange={(e) => handleLocalEndpointChange(e.target.value)}
             placeholder={endpointType === 'path' ? '/api/v2/example' : 'https://example.com/api'}
           />
         </div>
@@ -174,14 +253,14 @@ export function ActionHttpForm({ data, onChange }: ActionHttpFormProps) {
           <Label htmlFor='def-connection'>Connection Name</Label>
           <Input
             id='def-connection'
-            value={definition.connectionName || ''}
-            onChange={(e) => handleDefinitionChange('connectionName', e.target.value)}
+            value={localConnectionName}
+            onChange={(e) => handleConnectionNameChange(e.target.value)}
           />
         </div>
 
         <div className='space-y-2'>
           <Label>Headers</Label>
-          {definition.headers?.map((header: { key: string; value: string }, index: number) => (
+          {localHeaders?.map((header: { key: string; value: string }, index: number) => (
             <div key={index} className='flex items-center gap-2'>
               <Input
                 placeholder='Key'

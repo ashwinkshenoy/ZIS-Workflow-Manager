@@ -275,11 +275,21 @@ export function createFlowResource(
           '001.ZIS.LoadConfig': {
             ActionName: 'zis:common:action:LoadConfig',
             Comment: 'Load ZIS settings from config',
-            Next: 'Debug.PostToWebhook',
+            Next: '002.Zendesk.UpdateTicket',
             Parameters: {
               scope: configSettingsName,
             },
             ResultPath: '$.config',
+            Type: 'Action',
+          },
+          '002.Zendesk.UpdateTicket': {
+            ActionName: `zis:${integrationKey}:action:Zendesk.UpdateTicket`,
+            Comment: 'Update zendesk ticket',
+            Next: 'Debug.PostToWebhook',
+            Parameters: {
+              'ticket_id.$': '$.input.ticket_event.ticket.id',
+            },
+            ResultPath: '$.api_response_ticket_update',
             Type: 'Action',
           },
           'Debug.PostToWebhook': {
@@ -339,6 +349,31 @@ export function createNewWorkflow(
         },
       },
       [flowResourceKey]: createFlowResource(flowResourceKey, integrationKey, configSettingsName),
+      'Zendesk.UpdateTicket': {
+        type: 'ZIS::Action::Http',
+        properties: {
+          definition: {
+            connectionName: 'zendesk',
+            headers: [
+              {
+                key: 'Content-Type',
+                value: 'application/json',
+              },
+            ],
+            method: 'PUT',
+            path: '/api/v2/tickets/{{$.ticket_id}}.json',
+            requestBody: {
+              ticket: {
+                comment: {
+                  body: 'Comment from New ZIS workflow.',
+                  public: false,
+                },
+              },
+            },
+          },
+          name: 'Zendesk.UpdateTicket',
+        },
+      },
       'Debug.PostToWebhook': {
         type: 'ZIS::Action::Http',
         properties: {
