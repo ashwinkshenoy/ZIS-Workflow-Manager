@@ -15,6 +15,16 @@ import ZDClient from '@/lib/ZDClient';
 import { createNewWorkflow } from '@/lib/workflow-utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useIntegration } from '@/context/integration-context';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { EVENT_TYPES } from '@/lib/event-types';
 
 export type NewWorkflowData = {
   name: string;
@@ -37,6 +47,9 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
   const [jobspecName, setJobspecName] = useState('');
   const [eventSource, setEventSource] = useState('support');
   const [eventType, setEventType] = useState('');
+  const [eventCategory, setEventCategory] = useState<
+    'ticket' | 'user' | 'organization' | 'customobject' | 'activity' | 'custom' | ''
+  >('');
   const [loadingIntegration, setLoadingIntegration] = useState(false);
   const [showInstallationDetails, setShowInstallationDetails] = useState(false);
   const [installationDetails, setInstallationDetails] = useState<any>({});
@@ -535,7 +548,7 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
                     placeholder='e.g., my_jobspec_name'
                   />
                 </div>
-                <div className='grid w-full items-center gap-1.5'>
+                {/* <div className='grid w-full items-center gap-1.5'>
                   <Label htmlFor='event-source'>Event Source</Label>
                   <Input
                     id='event-source'
@@ -543,30 +556,99 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
                     onChange={(e) => setEventSource(e.target.value)}
                     placeholder='e.g., support'
                   />
-                </div>
+                </div> */}
                 <div className='grid w-full items-center gap-1.5'>
-                  <Label htmlFor='event-type'>Event Type</Label>
-                  <Input
-                    id='event-type'
-                    value={eventType}
-                    onChange={(e) => setEventType(e.target.value)}
-                    placeholder='e.g., ticket.TagsChanged'
-                  />
-                  <p className='text-xs text-muted-foreground mt-1'>
-                    Need help finding event types?{' '}
-                    <a
-                      href='https://developer.zendesk.com/api-reference/integration-services/trigger-events/ticket-events/'
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      className='text-primary hover:underline'>
-                      View documentation
-                      <SquareArrowOutUpRight className='h-3 w-3 ml-1 inline-block' />
-                    </a>
-                  </p>
-                  <p className='text-xs text-muted-foreground'>
-                    Webhook can be created after creating the integration, under Modify Settings.
-                  </p>
+                  <Label htmlFor='event-category'>Event Category</Label>
+                  <Select
+                    value={eventCategory}
+                    onValueChange={(
+                      value: 'ticket' | 'user' | 'organization' | 'customobject' | 'activity' | 'custom'
+                    ) => {
+                      setEventCategory(value);
+                      setEventType(''); // Reset event type when category changes
+                    }}>
+                    <SelectTrigger id='event-category'>
+                      <SelectValue placeholder='Select event category' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='ticket'>Ticket</SelectItem>
+                      <SelectItem value='user'>User</SelectItem>
+                      <SelectItem value='organization'>Organization</SelectItem>
+                      <SelectItem value='customobject'>Custom Objects</SelectItem>
+                      <SelectItem value='activity'>Activity</SelectItem>
+                      <SelectItem value='custom'>Custom</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+                {eventCategory === 'custom' && (
+                  <div className='grid w-full items-center gap-1.5'>
+                    <Label htmlFor='event-source'>Event Source</Label>
+                    <Input
+                      id='event-source'
+                      value={eventSource}
+                      onChange={(e) => setEventSource(e.target.value)}
+                      placeholder='e.g., support'
+                    />
+                  </div>
+                )}
+                {eventCategory && eventCategory !== 'custom' && (
+                  <div className='grid w-full items-center gap-1.5'>
+                    <Label htmlFor='event-type'>Event Type</Label>
+                    <Select value={eventType} onValueChange={setEventType}>
+                      <SelectTrigger id='event-type'>
+                        <SelectValue placeholder='Select an event type' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>
+                            {eventCategory === 'ticket'
+                              ? 'Ticket Events'
+                              : eventCategory === 'user'
+                              ? 'User Events'
+                              : eventCategory === 'organization'
+                              ? 'Organization Events'
+                              : eventCategory === 'customobject'
+                              ? 'Custom Object Events'
+                              : 'Activity Events'}
+                          </SelectLabel>
+                          {EVENT_TYPES[eventCategory].map((event) => (
+                            <SelectItem key={event.value} value={event.value}>
+                              {event.label}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    <p className='text-xs text-muted-foreground mt-1'>
+                      Need help finding event types?{' '}
+                      <a
+                        href={`https://developer.zendesk.com/api-reference/integration-services/trigger-events/${eventCategory}-events/`}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        className='text-primary hover:underline'>
+                        View documentation
+                        <SquareArrowOutUpRight className='h-3 w-3 ml-1 inline-block' />
+                      </a>
+                    </p>
+                    <p className='text-xs text-muted-foreground'>
+                      Webhook can be created after creating the integration, under Modify Settings.
+                    </p>
+                  </div>
+                )}
+                {eventCategory === 'custom' && (
+                  <div className='grid w-full items-center gap-1.5'>
+                    <Label htmlFor='event-type'>Event Type</Label>
+                    <Input
+                      id='event-type'
+                      value={eventType}
+                      onChange={(e) => setEventType(e.target.value)}
+                      placeholder='e.g., ticket.CustomEvent'
+                    />
+                    <p className='text-xs text-muted-foreground'>
+                      Enter a custom event type. Format: category.EventName (e.g., ticket.CustomEvent)
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
