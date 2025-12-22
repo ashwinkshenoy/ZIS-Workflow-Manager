@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
+import { useIntegration } from '@/context/integration-context';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import type { ZISActionHttp, ZISResource, Workflow } from '@/lib/types';
@@ -38,6 +39,7 @@ export function ActionsSidebar({
   onActionAdd,
   onActionDelete,
 }: ActionsSidebarProps) {
+  const { selectedActionForEdit, setSelectedActionForEdit } = useIntegration();
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
   const [width, setWidth] = useState(540);
   const [rawJson, setRawJson] = useState('');
@@ -49,13 +51,17 @@ export function ActionsSidebar({
   useEffect(() => {
     if (!isOpen) {
       setSelectedActionId(null);
+      setSelectedActionForEdit(null);
+    } else if (selectedActionForEdit && actions[selectedActionForEdit]) {
+      // If an initial action is specified and exists, select it
+      setSelectedActionId(selectedActionForEdit);
     }
     // If the selected action is deleted from outside, deselect it
     if (selectedActionId && !actions[selectedActionId]) {
       const remainingActions = Object.keys(actions);
       setSelectedActionId(remainingActions.length > 0 ? remainingActions[0] : null);
     }
-  }, [isOpen, actions, selectedActionId]);
+  }, [isOpen, actions, selectedActionId, selectedActionForEdit, setSelectedActionForEdit]);
 
   const selectedAction = selectedActionId ? actions[selectedActionId] : null;
   const selectedActionUsageCount = (selectedActionId && actionUsage[selectedActionId]) || 0;
@@ -225,12 +231,16 @@ export function ActionsSidebar({
                 <div className='flex items-center justify-between'>
                   <Label htmlFor='action-select'>Action</Label>
                   <div className='flex items-center gap-2'>
-                    <Button variant='outline' size='sm' onClick={() => setNewActionDialogOpen(true)}>
-                      <Plus className='mr-2 h-4 w-4' /> New Action
-                    </Button>
+                    {!selectedAction && (
+                      <Button variant='outline' size='sm' onClick={() => setNewActionDialogOpen(true)}>
+                        <Plus className='h-4 w-4' />
+                        New Action
+                      </Button>
+                    )}
                     {selectedAction && (
                       <Button variant='destructive-outline' size='sm' onClick={() => setDeleteActionDialogOpen(true)}>
-                        <Trash2 className='mr-2 h-4 w-4' /> Delete
+                        <Trash2 className='h-4 w-4' />
+                        Delete
                       </Button>
                     )}
                   </div>

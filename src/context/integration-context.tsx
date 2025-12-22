@@ -19,6 +19,8 @@ type IntegrationContextType = {
   setActionsSidebarOpen: (isOpen: boolean) => void;
   isConfigsSidebarOpen: boolean;
   setConfigsSidebarOpen: (isOpen: boolean) => void;
+  selectedActionForEdit: string | null;
+  setSelectedActionForEdit: (actionKey: string | null) => void;
 };
 
 /**
@@ -44,6 +46,7 @@ export function IntegrationProvider({ children }: { children: ReactNode }) {
   const [allIntegrations, setAllIntegrations] = useState<Integration[]>([]);
   const [isActionsSidebarOpen, setActionsSidebarOpen] = useState<boolean>(false);
   const [isConfigsSidebarOpen, setConfigsSidebarOpen] = useState<boolean>(false);
+  const [selectedActionForEdit, setSelectedActionForEdit] = useState<string | null>(null);
 
   return (
     <IntegrationContext.Provider
@@ -62,6 +65,9 @@ export function IntegrationProvider({ children }: { children: ReactNode }) {
 
         isConfigsSidebarOpen,
         setConfigsSidebarOpen,
+
+        selectedActionForEdit,
+        setSelectedActionForEdit,
       }}>
       {children}
     </IntegrationContext.Provider>

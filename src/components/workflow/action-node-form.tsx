@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { ZISState, type ZISResource } from '@/lib/types';
 import { Fragment } from 'react';
 import { Button } from '../ui/button';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Pencil } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -18,7 +18,7 @@ type ActionNodeFormProps = {
 };
 
 export function ActionNodeForm({ data, actions, onChange }: ActionNodeFormProps) {
-  const { selectedIntegration } = useIntegration();
+  const { selectedIntegration, setActionsSidebarOpen, setSelectedActionForEdit } = useIntegration();
 
   const handleParameterChange = (index: number, field: 'key' | 'value', newValue: string) => {
     if (!data.Parameters) return;
@@ -132,10 +132,27 @@ export function ActionNodeForm({ data, actions, onChange }: ActionNodeFormProps)
     ? data.ActionName
     : data.ActionName?.split(':').pop() || '';
 
+  const handleEditActionClick = () => {
+    if (actionNameKey && !actionNameKey.startsWith('zis:common:')) {
+      setSelectedActionForEdit(actionNameKey);
+      setActionsSidebarOpen(true);
+    }
+  };
+
+  const canEditAction = actionNameKey && !actionNameKey.startsWith('zis:common:') && actions[actionNameKey];
+
   return (
     <div className='space-y-4'>
       <div className='grid w-full gap-1.5'>
-        <Label htmlFor='action-name'>Action Name</Label>
+        <div className='flex items-center justify-between'>
+          <Label htmlFor='action-name'>Action Name</Label>
+          {canEditAction && (
+            <Button variant='outline' size='sm' onClick={handleEditActionClick} className='text-xs'>
+              <Pencil className='h-1 w-1' />
+              Edit Action
+            </Button>
+          )}
+        </div>
         <Select value={actionNameKey} onValueChange={handleActionNameChange}>
           <SelectTrigger id='action-name'>
             <SelectValue placeholder='Select an action' />

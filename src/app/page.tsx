@@ -40,6 +40,8 @@ export default function Home() {
     isConfigsSidebarOpen,
     setConfigsSidebarOpen,
     setSelectedIntegrationObject,
+    selectedActionForEdit,
+    setSelectedActionForEdit,
   } = useIntegration();
   const [isDeleteFlowDialogOpen, setDeleteFlowDialogOpen] = useState(false);
   const { toast } = useToast();
