@@ -518,7 +518,10 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
                   <Input
                     id='workflow-name'
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      setJobspecName(e.target.value);
+                    }}
                     placeholder='e.g., my_awesome_integration'
                     disabled={selectedIntegrationObject !== null}
                   />
@@ -537,10 +540,10 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
             </div>
 
             <div className='space-y-2'>
-              <h4 className='font-medium text-foreground'>JobSpec Details</h4>
+              <h4 className='font-medium text-foreground'>Job Spec Details</h4>
               <div className='space-y-4 rounded-md border p-4 bg-muted/30'>
                 <div className='grid w-full items-center gap-1.5'>
-                  <Label htmlFor='jobspec-name'>JobSpec Name</Label>
+                  <Label htmlFor='jobspec-name'>Job Spec Name</Label>
                   <Input
                     id='jobspec-name'
                     value={jobspecName}
@@ -601,15 +604,17 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
                       <SelectContent>
                         <SelectGroup>
                           <SelectLabel>
-                            {eventCategory === 'ticket'
-                              ? 'Ticket Events'
-                              : eventCategory === 'user'
-                              ? 'User Events'
-                              : eventCategory === 'organization'
-                              ? 'Organization Events'
-                              : eventCategory === 'customobject'
-                              ? 'Custom Object Events'
-                              : 'Activity Events'}
+                            <u>
+                              {eventCategory === 'ticket'
+                                ? 'Ticket Events'
+                                : eventCategory === 'user'
+                                ? 'User Events'
+                                : eventCategory === 'organization'
+                                ? 'Organization Events'
+                                : eventCategory === 'customobject'
+                                ? 'Custom Object Events'
+                                : 'Activity Events'}
+                            </u>
                           </SelectLabel>
                           {EVENT_TYPES[eventCategory].map((event) => (
                             <SelectItem key={event.value} value={event.value}>
@@ -619,20 +624,6 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
                         </SelectGroup>
                       </SelectContent>
                     </Select>
-                    <p className='text-xs text-muted-foreground mt-1'>
-                      Need help finding event types?{' '}
-                      <a
-                        href={`https://developer.zendesk.com/api-reference/integration-services/trigger-events/${eventCategory}-events/`}
-                        target='_blank'
-                        rel='noopener noreferrer'
-                        className='text-primary hover:underline'>
-                        View documentation
-                        <SquareArrowOutUpRight className='h-3 w-3 ml-1 inline-block' />
-                      </a>
-                    </p>
-                    <p className='text-xs text-muted-foreground'>
-                      Webhook can be created after creating the integration, under Modify Settings.
-                    </p>
                   </div>
                 )}
                 {eventCategory === 'custom' && (
@@ -649,6 +640,20 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
                     </p>
                   </div>
                 )}
+                <p className='text-xs text-muted-foreground !mt-2'>
+                  Need help finding event types?{' '}
+                  <a
+                    href={`https://developer.zendesk.com/api-reference/integration-services/trigger-events/${eventCategory}-events/`}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='text-primary hover:underline'>
+                    View documentation
+                    <SquareArrowOutUpRight className='h-3 w-3 ml-1 inline-block' />
+                  </a>
+                </p>
+                <p className='text-xs text-muted-foreground !mt-2'>
+                  <u>Note:</u> Webhook can be created after creating the integration, under Modify Settings.
+                </p>
               </div>
             </div>
           </div>

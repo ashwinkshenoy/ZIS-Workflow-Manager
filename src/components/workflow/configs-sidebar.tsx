@@ -432,15 +432,6 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
                   <h4 className='font-medium text-base'>Add New Property</h4>
                   <div className='space-y-4'>
                     <div className='grid w-full items-center gap-1.5'>
-                      <Label htmlFor='new-key'>Key</Label>
-                      <Input
-                        id='new-key'
-                        value={newKey}
-                        onChange={(e) => setNewKey(e.target.value)}
-                        placeholder='new_config_key'
-                      />
-                    </div>
-                    <div className='grid w-full items-center gap-1.5'>
                       <Label htmlFor='new-value-type'>Type</Label>
                       <Select
                         value={newValueType}
@@ -460,7 +451,16 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
                       </Select>
                     </div>
                     <div className='grid w-full items-center gap-1.5'>
-                      <Label htmlFor='new-value'>Value</Label>
+                      <Label htmlFor='new-key'>Property Name</Label>
+                      <Input
+                        id='new-key'
+                        value={newKey}
+                        onChange={(e) => setNewKey(e.target.value)}
+                        placeholder='new_config_key'
+                      />
+                    </div>
+                    <div className='grid w-full items-center gap-1.5'>
+                      <Label htmlFor='new-value'>Property Value</Label>
                       {renderNewValueInput()}
                     </div>
                   </div>
