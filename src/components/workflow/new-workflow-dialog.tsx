@@ -643,7 +643,7 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
                 <p className='text-xs text-muted-foreground !mt-2'>
                   Need help finding event types?{' '}
                   <a
-                    href={`https://developer.zendesk.com/api-reference/integration-services/trigger-events/${eventCategory}-events/`}
+                    href={`https://developer.zendesk.com/api-reference/integration-services/trigger-events/ticket-events/`}
                     target='_blank'
                     rel='noopener noreferrer'
                     className='text-primary hover:underline'>
