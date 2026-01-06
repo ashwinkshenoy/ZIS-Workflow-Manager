@@ -3,13 +3,15 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ZISState, type ZISResource } from '@/lib/types';
-import { Fragment } from 'react';
+import { Fragment, useMemo } from 'react';
 import { Button } from '../ui/button';
 import { Plus, Trash2, Pencil } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useIntegration } from '@/context/integration-context';
+import { PlaceholderPicker } from './placeholder-picker';
+import { extractPlaceholders } from '@/lib/placeholder-utils';
 
 type ActionNodeFormProps = {
   data: ZISState;
@@ -19,6 +21,22 @@ type ActionNodeFormProps = {
 
 export function ActionNodeForm({ data, actions, onChange }: ActionNodeFormProps) {
   const { selectedIntegration, setActionsSidebarOpen, setSelectedActionForEdit } = useIntegration();
+
+  // Extract placeholders from the selected action's definition
+  const availablePlaceholders = useMemo(() => {
+    const actionNameKey = data.ActionName?.startsWith('zis:common:')
+      ? data.ActionName
+      : data.ActionName?.split(':').pop() || '';
+
+    // Get the action definition from actions
+    if (actionNameKey && !actionNameKey.startsWith('zis:common:') && actions[actionNameKey]) {
+      const actionResource = actions[actionNameKey];
+      if (actionResource.type === 'ZIS::Action::Http' && 'definition' in actionResource.properties) {
+        return extractPlaceholders(actionResource.properties.definition);
+      }
+    }
+    return [];
+  }, [data.ActionName, actions]);
 
   const handleParameterChange = (index: number, field: 'key' | 'value', newValue: string) => {
     if (!data.Parameters) return;
@@ -191,13 +209,21 @@ export function ActionNodeForm({ data, actions, onChange }: ActionNodeFormProps)
                         Key
                         <span className='text-xs text-muted-foreground ml-1'>[e.g: variable.$]</span>
                       </Label>
-                      <Input
-                        id={`param-key-${index}`}
-                        placeholder='Key'
-                        value={paramKey}
-                        onChange={(e) => handleParameterChange(index, 'key', e.target.value)}
-                        className='font-mono text-xs'
-                      />
+                      <div className='flex items-center gap-1'>
+                        <Input
+                          id={`param-key-${index}`}
+                          placeholder='Key'
+                          value={paramKey}
+                          onChange={(e) => handleParameterChange(index, 'key', e.target.value)}
+                          className='font-mono text-xs flex-1'
+                        />
+                        <PlaceholderPicker
+                          placeholders={availablePlaceholders}
+                          onSelect={(placeholder) => handleParameterChange(index, 'key', paramKey + placeholder)}
+                          buttonSize='sm'
+                          disabled={availablePlaceholders.length === 0}
+                        />
+                      </div>
                     </div>
                     <div className='grid w-full items-center gap-1.5'>
                       <Label htmlFor={`param-value-${index}`}>Value</Label>
