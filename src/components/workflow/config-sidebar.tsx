@@ -83,16 +83,10 @@ export function ConfigSidebar({ node, actions, isOpen, onClose, onNodeChange, on
       setFormData(node.data);
       setRawJson(JSON.stringify(node.data, null, 2));
       setIsJsonValid(true);
-    } else {
-      setFormData(null);
     }
   }, [node]);
 
-  if (!node || !formData) {
-    return null;
-  }
-
-  const Icon = getIconForNodeType(formData.Type);
+  const Icon = formData ? getIconForNodeType(formData.Type) : null;
 
   const handleNodeIdBlur = () => {
     if (node && nodeId !== node.id) {
@@ -101,6 +95,7 @@ export function ConfigSidebar({ node, actions, isOpen, onClose, onNodeChange, on
   };
 
   const handleFormChange = (updatedFormData: Partial<ZISState>) => {
+    if (!node || !formData) return;
     const newData = { ...formData, ...updatedFormData };
     setFormData(newData);
     debouncedOnNodeChange(node.id, updatedFormData);
@@ -110,13 +105,15 @@ export function ConfigSidebar({ node, actions, isOpen, onClose, onNodeChange, on
     handleFormChange({ Default: e.target.value });
   };
 
-  const handleChoiceChange = (index: number, updatedChoice: ZISChoice) => {
+  const handleChoiceConditionChange = (choiceIndex: number, updatedChoice: ZISChoice) => {
+    if (!formData) return;
     const newChoices = [...(formData.Choices || [])];
-    newChoices[index] = updatedChoice;
+    newChoices[choiceIndex] = updatedChoice;
     handleFormChange({ Choices: newChoices });
   };
 
   const handleAddChoice = () => {
+    if (!formData) return;
     const newChoice: ZISChoice = {
       Next: '',
       Variable: '$.',
@@ -127,16 +124,18 @@ export function ConfigSidebar({ node, actions, isOpen, onClose, onNodeChange, on
   };
 
   const handleRemoveChoice = (index: number) => {
+    if (!formData) return;
     const newChoices = [...(formData.Choices || [])];
     newChoices.splice(index, 1);
     handleFormChange({ Choices: newChoices });
   };
 
   const handleRawJsonChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newJson = e.target.value;
-    setRawJson(newJson);
+    if (!node) return;
+    const value = e.target.value;
+    setRawJson(value);
     try {
-      const parsed = JSON.parse(newJson);
+      const parsed = JSON.parse(value);
       setFormData(parsed);
       onNodeChange(node.id, parsed);
       setIsJsonValid(true);
@@ -145,11 +144,11 @@ export function ConfigSidebar({ node, actions, isOpen, onClose, onNodeChange, on
     }
   };
 
-  const isChoiceNode = formData.Type === 'Choice';
-  const isActionNode = formData.Type === 'Action';
-  const isPassNode = formData.Type === 'Pass';
-  const hasNext = 'Next' in formData;
-  const hasResultPath = 'ResultPath' in formData;
+  const isChoiceNode = formData?.Type === 'Choice';
+  const isActionNode = formData?.Type === 'Action';
+  const isPassNode = formData?.Type === 'Pass';
+  const hasNext = formData ? 'Next' in formData : false;
+  const hasResultPath = formData ? 'ResultPath' in formData : false;
 
   const shouldRenderGenericResultPath = hasResultPath && !isPassNode && !isActionNode;
 
@@ -171,125 +170,129 @@ export function ConfigSidebar({ node, actions, isOpen, onClose, onNodeChange, on
             )}
           />
         </div>
-        <SheetHeader className='pr-8 space-y-4'>
-          <SheetTitle className='flex items-center gap-3'>
-            <Icon className='h-6 w-6 text-accent-foreground flex-shrink-0' />
-            <Input
-              value={nodeId}
-              onChange={(e) => setNodeId(e.target.value)}
-              onBlur={handleNodeIdBlur}
-              className='text-lg font-semibold tracking-tight p-0 h-auto border-0 focus-visible:ring-0 focus-visible:ring-offset-0 truncate bg-transparent'
-            />
-          </SheetTitle>
-          <SheetDescription>Configure the properties of this workflow step.</SheetDescription>
-        </SheetHeader>
-
-        <ScrollArea className='flex-1 -mx-6 px-6'>
-          <div className='space-y-6 py-6'>
-            <div className='grid w-full items-center gap-1.5'>
-              <Label htmlFor='node-type'>Type</Label>
-              <Badge id='node-type' variant='outline' className='w-fit'>
-                {formData.Type}
-              </Badge>
-            </div>
-
-            <GenericForm data={formData} onChange={handleFormChange} />
-
-            {isActionNode && <ActionNodeForm data={formData} actions={actions} onChange={handleFormChange} />}
-
-            {isPassNode && <PassNodeForm data={formData} onChange={handleFormChange} />}
-
-            {shouldRenderGenericResultPath && (
-              <div className='grid w-full items-center gap-1.5'>
-                <Label htmlFor='result-path'>ResultPath</Label>
+        {node && formData && (
+          <>
+            <SheetHeader className='pr-8 space-y-4'>
+              <SheetTitle className='flex items-center gap-3'>
+                {Icon && <Icon className='h-6 w-6 text-accent-foreground flex-shrink-0' />}
                 <Input
-                  id='result-path'
-                  value={formData.ResultPath || ''}
-                  onChange={(e) => handleFormChange({ ResultPath: e.target.value })}
-                  placeholder='e.g., $.result_output'
+                  value={nodeId}
+                  onChange={(e) => setNodeId(e.target.value)}
+                  onBlur={handleNodeIdBlur}
+                  className='text-lg font-semibold tracking-tight p-0 h-auto border-0 focus-visible:ring-0 focus-visible:ring-offset-0 truncate bg-transparent'
                 />
-              </div>
-            )}
+              </SheetTitle>
+              <SheetDescription>Configure the properties of this workflow step.</SheetDescription>
+            </SheetHeader>
 
-            {hasNext && (
-              <div className='grid w-full items-center gap-1.5 pt-4'>
-                <Label htmlFor='next-step'>Next Step</Label>
-                <Input
-                  id='next-step'
-                  value={formData.Next || ''}
-                  onChange={(e) => handleFormChange({ Next: e.target.value })}
-                  placeholder='e.g., 002.Next.Step'
-                />
-              </div>
-            )}
-
-            {isChoiceNode && (
-              <>
-                <Separator />
-                <Accordion type='multiple' className='w-full' defaultValue={[`item-0`]}>
-                  {formData.Choices?.map((choice: ZISChoice, index: number) => (
-                    <AccordionItem value={`item-${index}`} key={index}>
-                      <div className='flex w-full items-center'>
-                        <AccordionTrigger className='flex-1'>
-                          <span>Choice {index + 1}</span>
-                        </AccordionTrigger>
-                        <Button
-                          variant='ghost'
-                          size='icon'
-                          className='h-7 w-7 shrink-0'
-                          onClick={() => handleRemoveChoice(index)}>
-                          <Trash2 className='w-4 h-4 text-destructive' />
-                        </Button>
-                      </div>
-                      <AccordionContent>
-                        <ChoiceForm
-                          choice={choice}
-                          onChange={(updatedChoice) => handleChoiceChange(index, updatedChoice)}
-                        />
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-                <Button variant='outline' size='sm' onClick={handleAddChoice} className='w-full'>
-                  <Plus className='mr-2 h-4 w-4' /> Add Choice Rule
-                </Button>
-                <div className='grid w-full items-center gap-1.5 pt-4'>
-                  <Label htmlFor='default-next'>Default Next Step</Label>
-                  <Input
-                    id='default-next'
-                    value={formData.Default || ''}
-                    onChange={handleDefaultChange}
-                    placeholder='e.g., 010.EndFlow.Default'
-                  />
+            <ScrollArea className='flex-1 -mx-6 px-6'>
+              <div className='space-y-6 py-6'>
+                <div className='grid w-full items-center gap-1.5'>
+                  <Label htmlFor='node-type'>Type</Label>
+                  <Badge id='node-type' variant='outline' className='w-fit'>
+                    {formData.Type}
+                  </Badge>
                 </div>
-              </>
-            )}
 
-            <Separator />
+                <GenericForm data={formData} onChange={handleFormChange} />
 
-            <Accordion type='single' collapsible className='w-full'>
-              <AccordionItem value='raw-properties'>
-                <AccordionTrigger>Raw Properties (JSON)</AccordionTrigger>
-                <AccordionContent>
-                  <Textarea
-                    value={rawJson}
-                    onChange={handleRawJsonChange}
-                    rows={15}
-                    className={`font-mono text-xs ${
-                      !isJsonValid ? 'border-destructive ring-2 ring-destructive ring-offset-2' : ''
-                    }`}
-                    placeholder='Enter valid JSON...'
-                  />
-                  {!isJsonValid && <p className='mt-2 text-sm text-destructive'>Invalid JSON format.</p>}
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </div>
-        </ScrollArea>
+                {isActionNode && <ActionNodeForm data={formData} actions={actions} onChange={handleFormChange} />}
 
-        <SheetFooter>
-          <Button onClick={onClose}>Done</Button>
-        </SheetFooter>
+                {isPassNode && <PassNodeForm data={formData} onChange={handleFormChange} />}
+
+                {shouldRenderGenericResultPath && (
+                  <div className='grid w-full items-center gap-1.5'>
+                    <Label htmlFor='result-path'>ResultPath</Label>
+                    <Input
+                      id='result-path'
+                      value={formData.ResultPath || ''}
+                      onChange={(e) => handleFormChange({ ResultPath: e.target.value })}
+                      placeholder='e.g., $.result_output'
+                    />
+                  </div>
+                )}
+
+                {hasNext && (
+                  <div className='grid w-full items-center gap-1.5 pt-4'>
+                    <Label htmlFor='next-step'>Next Step</Label>
+                    <Input
+                      id='next-step'
+                      value={formData.Next || ''}
+                      onChange={(e) => handleFormChange({ Next: e.target.value })}
+                      placeholder='e.g., 002.Next.Step'
+                    />
+                  </div>
+                )}
+
+                {isChoiceNode && (
+                  <>
+                    <Separator />
+                    <Accordion type='multiple' className='w-full' defaultValue={[`item-0`]}>
+                      {formData.Choices?.map((choice: ZISChoice, index: number) => (
+                        <AccordionItem value={`item-${index}`} key={index}>
+                          <div className='flex w-full items-center'>
+                            <AccordionTrigger className='flex-1'>
+                              <span>Choice {index + 1}</span>
+                            </AccordionTrigger>
+                            <Button
+                              variant='ghost'
+                              size='icon'
+                              className='h-7 w-7 shrink-0'
+                              onClick={() => handleRemoveChoice(index)}>
+                              <Trash2 className='w-4 h-4 text-destructive' />
+                            </Button>
+                          </div>
+                          <AccordionContent>
+                            <ChoiceForm
+                              choice={choice}
+                              onChange={(updatedChoice) => handleChoiceConditionChange(index, updatedChoice)}
+                            />
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                    <Button variant='outline' size='sm' onClick={handleAddChoice} className='w-full'>
+                      <Plus className='mr-2 h-4 w-4' /> Add Choice Rule
+                    </Button>
+                    <div className='grid w-full items-center gap-1.5 pt-4'>
+                      <Label htmlFor='default-next'>Default Next Step</Label>
+                      <Input
+                        id='default-next'
+                        value={formData.Default || ''}
+                        onChange={handleDefaultChange}
+                        placeholder='e.g., 010.EndFlow.Default'
+                      />
+                    </div>
+                  </>
+                )}
+
+                <Separator />
+
+                <Accordion type='single' collapsible className='w-full'>
+                  <AccordionItem value='raw-properties'>
+                    <AccordionTrigger>Raw Properties (JSON)</AccordionTrigger>
+                    <AccordionContent>
+                      <Textarea
+                        value={rawJson}
+                        onChange={handleRawJsonChange}
+                        rows={15}
+                        className={`font-mono text-xs ${
+                          !isJsonValid ? 'border-destructive ring-2 ring-destructive ring-offset-2' : ''
+                        }`}
+                        placeholder='Enter valid JSON...'
+                      />
+                      {!isJsonValid && <p className='mt-2 text-sm text-destructive'>Invalid JSON format.</p>}
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </div>
+            </ScrollArea>
+
+            <SheetFooter>
+              <Button onClick={onClose}>Done</Button>
+            </SheetFooter>
+          </>
+        )}
       </SheetContent>
     </Sheet>
   );
