@@ -21,6 +21,8 @@ type IntegrationContextType = {
   setConfigsSidebarOpen: (isOpen: boolean) => void;
   selectedActionForEdit: string | null;
   setSelectedActionForEdit: (actionKey: string | null) => void;
+  isPlayground: boolean;
+  setIsPlayground: (isPlayground: boolean) => void;
 };
 
 /**
@@ -47,6 +49,7 @@ export function IntegrationProvider({ children }: { children: ReactNode }) {
   const [isActionsSidebarOpen, setActionsSidebarOpen] = useState<boolean>(false);
   const [isConfigsSidebarOpen, setConfigsSidebarOpen] = useState<boolean>(false);
   const [selectedActionForEdit, setSelectedActionForEdit] = useState<string | null>(null);
+  const [isPlayground, setIsPlayground] = useState<boolean>(false);
 
   return (
     <IntegrationContext.Provider
@@ -68,6 +71,9 @@ export function IntegrationProvider({ children }: { children: ReactNode }) {
 
         selectedActionForEdit,
         setSelectedActionForEdit,
+
+        isPlayground,
+        setIsPlayground,
       }}>
       {children}
     </IntegrationContext.Provider>

@@ -77,6 +77,8 @@ export function AppHeader({
     setSelectedIntegrationObject,
     allIntegrations,
     setAllIntegrations,
+    isPlayground,
+    setIsPlayground,
   } = useIntegration();
 
   const { toast } = useToast();
@@ -108,6 +110,7 @@ export function AppHeader({
   const resetFlow = () => {
     setSelectedIntegration(null);
     setSelectedIntegrationObject(null);
+    setIsPlayground(false);
     onWorkflowReset();
   };
 
@@ -204,7 +207,7 @@ export function AppHeader({
             {isSwitching && <Loader2 className=' absolute h-4 w-4 animate-spin top-3 left-[-18px]' />}
             <Select
               onValueChange={handleIntegrationChange}
-              disabled={isLoading || isSwitching}
+              disabled={isLoading || isSwitching || isPlayground}
               value={selectedIntegration || ''}>
               <SelectTrigger id='integration-select'>
                 <SelectValue placeholder={isLoading ? 'Loading integrations...' : 'Select an integration'} />
@@ -240,7 +243,10 @@ export function AppHeader({
 
         {/* Right Side */}
         <div className='flex items-center gap-2'>
-          <Button size='sm' onClick={saveBundle} disabled={isBundleSaving || !selectedIntegration || !workflow}>
+          <Button
+            size='sm'
+            onClick={saveBundle}
+            disabled={isBundleSaving || !selectedIntegration || !workflow || isPlayground}>
             {isBundleSaving ? (
               <Loader2 className='mr-1 h-4 w-4 animate-spin' />
             ) : (
@@ -254,7 +260,11 @@ export function AppHeader({
             Action
           </Button>
 
-          <Button variant='outline' size='sm' onClick={onManageConfigs} disabled={selectedIntegration === null}>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={onManageConfigs}
+            disabled={selectedIntegration === null || isPlayground}>
             <Cog className='mr-1 h-4 w-4' />
             Configs
           </Button>

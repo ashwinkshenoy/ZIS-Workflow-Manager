@@ -41,7 +41,7 @@ type NewWorkflowDialogProps = {
 };
 
 export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDialogProps) {
-  const { selectedIntegrationObject, setSelectedIntegration } = useIntegration();
+  const { selectedIntegrationObject, setSelectedIntegration, setIsPlayground } = useIntegration();
   const [name, setName] = useState(selectedIntegrationObject?.name || '');
   const [description, setDescription] = useState(selectedIntegrationObject?.description || '');
   const [jobspecName, setJobspecName] = useState('');
@@ -137,7 +137,7 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
   }, [selectedIntegrationObject]);
 
   /**
-   * Handles form submission for creating a new workflow
+   * Handles form submission for creating a new workflow for playground without saving integration.
    */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,6 +151,32 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
       return;
     }
 
+    // Validate name format (lowercase letters and underscores only)
+    const validNamePattern = /^[a-z_]+$/;
+    if (!validNamePattern.test(name)) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid Integration Name',
+        description:
+          'Integration name must contain only lowercase letters and underscores (no spaces or special characters).',
+      });
+      return;
+    }
+
+    // Validate jobspecName format (lowercase letters and underscores only)
+    if (!validNamePattern.test(jobspecName)) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid Job Spec Name',
+        description:
+          'Job Spec name must contain only lowercase letters and underscores (no spaces or special characters).',
+      });
+      return;
+    }
+
+    // Set playground flag to true
+    setIsPlayground(true);
+
     onCreate({
       name,
       description,
@@ -163,8 +189,6 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
     setName('');
     setDescription('');
     setJobspecName('');
-    setEventSource('');
-    setEventType('');
   };
 
   /**
@@ -194,6 +218,29 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
         variant: 'destructive',
         title: 'All fields are required',
         description: 'Please fill out all fields to create a new workflow.',
+      });
+      return;
+    }
+
+    // Validate name format (lowercase letters and underscores only)
+    const validNamePattern = /^[a-z_]+$/;
+    if (!validNamePattern.test(name)) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid Integration Name',
+        description:
+          'Integration name must contain only lowercase letters and underscores (no spaces or special characters).',
+      });
+      return;
+    }
+
+    // Validate jobspecName format (lowercase letters and underscores only)
+    if (!validNamePattern.test(jobspecName)) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid Job Spec Name',
+        description:
+          'Job Spec name must contain only lowercase letters and underscores (no spaces or special characters).',
       });
       return;
     }
@@ -522,7 +569,7 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
                       setName(e.target.value);
                       setJobspecName(e.target.value);
                     }}
-                    placeholder='e.g., my_awesome_integration'
+                    placeholder='e.g: my_awesome_integration'
                     disabled={selectedIntegrationObject !== null}
                   />
                 </div>
@@ -548,7 +595,7 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
                     id='jobspec-name'
                     value={jobspecName}
                     onChange={(e) => setJobspecName(e.target.value)}
-                    placeholder='e.g., my_jobspec_name'
+                    placeholder='e.g: my_jobspec_name'
                   />
                 </div>
                 {/* <div className='grid w-full items-center gap-1.5'>
