@@ -705,6 +705,7 @@ export default function Home() {
       <ConfigSidebar
         node={selectedNode}
         actions={actions}
+        allNodes={nodes}
         isOpen={!!selectedNode}
         onClose={() => handleNodeSelect(null)}
         onNodeChange={handleNodeChange}
