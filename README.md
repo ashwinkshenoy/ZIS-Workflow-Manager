@@ -2,6 +2,8 @@
 
 A powerful visual workflow designer for Zendesk Integration Services (ZIS) that allows you to create, edit, and manage complex automation workflows through an intuitive drag-and-drop interface.
 
+https://github.com/user-attachments/assets/f2c681f7-a741-4bf2-a45a-2d6c1c3fde3f
+
 ## 🚀 Features
 
 - **Visual Workflow Designer**: Build workflows using a drag-and-drop canvas with React Flow
