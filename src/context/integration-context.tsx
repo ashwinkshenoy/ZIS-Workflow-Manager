@@ -11,16 +11,22 @@ import type { Integration } from '@/lib/types';
 type IntegrationContextType = {
   selectedIntegration: string | null;
   setSelectedIntegration: (integrationName: string | null) => void;
+
   selectedIntegrationObject: Integration | null;
   setSelectedIntegrationObject: (integrationObject: Integration | null) => void;
+
   allIntegrations: Integration[];
   setAllIntegrations: (integrations: Integration[]) => void;
+
   isActionsSidebarOpen: boolean;
   setActionsSidebarOpen: (isOpen: boolean) => void;
+
   isConfigsSidebarOpen: boolean;
   setConfigsSidebarOpen: (isOpen: boolean) => void;
+
   selectedActionForEdit: string | null;
   setSelectedActionForEdit: (actionKey: string | null) => void;
+
   isPlayground: boolean;
   setIsPlayground: (isPlayground: boolean) => void;
 };
