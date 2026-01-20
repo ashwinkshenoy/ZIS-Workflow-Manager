@@ -79,6 +79,7 @@ export function AppHeader({
     setAllIntegrations,
     isPlayground,
     setIsPlayground,
+    setIntegrationConfig,
   } = useIntegration();
 
   const { toast } = useToast();
@@ -110,6 +111,7 @@ export function AppHeader({
   const resetFlow = () => {
     setSelectedIntegration(null);
     setSelectedIntegrationObject(null);
+    setIntegrationConfig(null);
     setIsPlayground(false);
     onWorkflowReset();
   };
@@ -125,7 +127,7 @@ export function AppHeader({
     // Set the selected integration object
     const selectedIntegrationObj = allIntegrations.find((integration) => integration.name === integrationName) || null;
     setSelectedIntegrationObject(selectedIntegrationObj);
-
+    setIntegrationConfig(null);
     try {
       // Step 1: Fetch bundles for the integration to get the UUID
       const bundlesResponse = await ZDClient.getBundleUUID(integrationName);

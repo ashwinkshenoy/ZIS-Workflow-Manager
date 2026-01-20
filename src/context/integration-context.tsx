@@ -29,6 +29,9 @@ type IntegrationContextType = {
 
   isPlayground: boolean;
   setIsPlayground: (isPlayground: boolean) => void;
+
+  integrationConfig: Record<string, any> | null;
+  setIntegrationConfig: (config: Record<string, any> | null) => void;
 };
 
 /**
@@ -56,6 +59,7 @@ export function IntegrationProvider({ children }: { children: ReactNode }) {
   const [isConfigsSidebarOpen, setConfigsSidebarOpen] = useState<boolean>(false);
   const [selectedActionForEdit, setSelectedActionForEdit] = useState<string | null>(null);
   const [isPlayground, setIsPlayground] = useState<boolean>(false);
+  const [integrationConfig, setIntegrationConfig] = useState<Record<string, any> | null>(null);
 
   return (
     <IntegrationContext.Provider
@@ -80,6 +84,9 @@ export function IntegrationProvider({ children }: { children: ReactNode }) {
 
         isPlayground,
         setIsPlayground,
+
+        integrationConfig,
+        setIntegrationConfig,
       }}>
       {children}
     </IntegrationContext.Provider>

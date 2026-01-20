@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ChevronDown, Copy, Check, ChevronUp, Sparkles } from 'lucide-react';
+import { ChevronDown, Copy, Check, ChevronUp, Sparkles, Cog } from 'lucide-react';
 import type { Node } from 'reactflow';
 import type { ZISState, Workflow, ZISFlow, ZISChoice } from '@/lib/types';
 import { getIconForNodeType } from '@/lib/icons';
 import { cn } from '@/lib/utils';
+import { useIntegration } from '@/context/integration-context';
 
 type RecipeDataItem = {
   stepId: string;
@@ -38,6 +39,7 @@ export function RecipeDataSheet({
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
   const [isPanelExpanded, setIsPanelExpanded] = useState(false);
+  const { integrationConfig } = useIntegration();
 
   useEffect(() => {
     if (nodes && nodes.length > 0 && currentNode && workflow && selectedFlowName) {
@@ -160,6 +162,60 @@ export function RecipeDataSheet({
 
           <ScrollArea className='flex-1 overflow-y-auto'>
             <div className='pr-1 space-y-1'>
+              {/* Configuration Section */}
+              {integrationConfig && Object.keys(integrationConfig).length > 0 && (
+                <div className='border rounded-md overflow-hidden mb-2'>
+                  <div
+                    onClick={() => handleItemClick('config')}
+                    className='flex items-center justify-between p-2.5 bg-card hover:bg-accent/50 transition-colors cursor-pointer group'>
+                    <div className='flex items-center gap-2.5 flex-1 min-w-0'>
+                      <div className='w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0'>
+                        <Cog className='w-5 h-5 text-primary' />
+                      </div>
+                      <div className='flex-1 min-w-0'>
+                        <div className='font-medium text-xs truncate'>Configuration</div>
+                      </div>
+                    </div>
+                    {expandedItem === 'config' ? (
+                      <ChevronUp className='w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0' />
+                    ) : (
+                      <ChevronDown className='w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0' />
+                    )}
+                  </div>
+
+                  {expandedItem === 'config' && (
+                    <div className='p-2.5 bg-muted/30 border-t space-y-2'>
+                      {Object.entries(integrationConfig).map(([key, value]) => {
+                        const configPath = `$.config.${key}`;
+                        const isCopied = copiedItem === `config-${key}`;
+                        return (
+                          <div key={key} className='flex items-center justify-between gap-2'>
+                            <div className='flex-1 min-w-0'>
+                              <Badge
+                                variant='secondary'
+                                className='font-mono text-xs px-2 py-1 max-w-fit cursor-pointer hover:bg-secondary/80'
+                                onClick={(e) => handleCopyToClipboard(configPath, `config-${key}`, e)}>
+                                {configPath}
+                              </Badge>
+                            </div>
+                            <button
+                              onClick={(e) => handleCopyToClipboard(configPath, `config-${key}`, e)}
+                              className='p-1.5 rounded hover:bg-background transition-colors'
+                              title='Copy to clipboard'>
+                              {isCopied ? (
+                                <Check className='w-3.5 h-3.5 text-green-600' />
+                              ) : (
+                                <Copy className='w-3.5 h-3.5 text-muted-foreground' />
+                              )}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {recipeData.length === 0 ? (
                 <div className='text-center text-muted-foreground text-sm'>No steps with output data found</div>
               ) : (
@@ -179,7 +235,6 @@ export function RecipeDataSheet({
                           </div>
                           <div className='flex-1 min-w-0'>
                             <div className='font-medium text-xs truncate'>{item.stepName}</div>
-                            <div className='text-[11px] text-muted-foreground'>(Step {item.stepNumber} output)</div>
                           </div>
                         </div>
                         {isExpanded ? (

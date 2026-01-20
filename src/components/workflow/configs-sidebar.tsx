@@ -44,7 +44,7 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
 
   const isResizing = useRef(false);
   const { toast } = useToast();
-  const { selectedIntegration: integrationName } = useIntegration();
+  const { selectedIntegration: integrationName, setIntegrationConfig } = useIntegration();
 
   useEffect(() => {
     if (isOpen && integrationName) {
@@ -67,6 +67,8 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
         setConfigs(configData);
         setRawJson(JSON.stringify(configData, null, 2));
         setIsJsonValid(true);
+        // Save to integration context for use in recipe-data and other components
+        setIntegrationConfig(configData);
       }
     } catch (err: any) {
       console.log('Failed to fetch configs:', err);
