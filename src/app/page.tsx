@@ -84,7 +84,7 @@ export default function Home() {
             target: e.target,
             onNodeAdd: handleNodeAdd,
           },
-        }))
+        })),
       );
 
       if (selectedNode) {
@@ -124,7 +124,7 @@ export default function Home() {
         return newWorkflow;
       });
     },
-    [setWorkflow, selectedFlowName]
+    [setWorkflow, selectedFlowName],
   );
 
   const handleNodeAdd = useCallback(
@@ -207,7 +207,7 @@ export default function Home() {
         return newWorkflow;
       });
     },
-    [setWorkflow, selectedFlowName]
+    [setWorkflow, selectedFlowName],
   );
 
   const handleNodeAddBelow = useCallback(
@@ -276,7 +276,7 @@ export default function Home() {
         return newWorkflow;
       });
     },
-    [selectedFlowName, setWorkflow]
+    [selectedFlowName, setWorkflow],
   );
 
   const requestNodeDelete = useCallback((nodeId: string) => {
@@ -308,19 +308,22 @@ export default function Home() {
         />
       ),
     }),
-    [requestNodeDelete, handleNodeAddBelow, memoizedStartAt]
+    [requestNodeDelete, handleNodeAddBelow, memoizedStartAt],
   );
 
   const edgeTypes = useMemo(() => ({ 'add-node-edge': AddNodeEdge }), []);
 
   const actions = useMemo(() => {
     if (!workflow) return {};
-    return Object.entries(workflow.resources).reduce((acc, [key, resource]) => {
-      if (resource.type.startsWith('ZIS::Action')) {
-        acc[key] = resource;
-      }
-      return acc;
-    }, {} as Record<string, ZISResource>);
+    return Object.entries(workflow.resources).reduce(
+      (acc, [key, resource]) => {
+        if (resource.type.startsWith('ZIS::Action')) {
+          acc[key] = resource;
+        }
+        return acc;
+      },
+      {} as Record<string, ZISResource>,
+    );
   }, [workflow]);
 
   const actionUsage = useMemo(() => {
@@ -418,7 +421,7 @@ export default function Home() {
     const newFlow = createFlowResource(
       flowResourceKey,
       selectedIntegration || 'default',
-      `${selectedIntegration}_settings`
+      `${selectedIntegration}_settings`,
     );
 
     const newWorkflow: Workflow = {
@@ -706,6 +709,8 @@ export default function Home() {
         node={selectedNode}
         actions={actions}
         allNodes={nodes}
+        workflow={workflow}
+        selectedFlowName={selectedFlowName}
         isOpen={!!selectedNode}
         onClose={() => handleNodeSelect(null)}
         onNodeChange={handleNodeChange}

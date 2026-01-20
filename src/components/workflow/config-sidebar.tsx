@@ -21,11 +21,14 @@ import { ActionNodeForm } from './action-node-form';
 import { PassNodeForm } from './pass-node-form';
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 import { RecipeDataSheet } from './recipe-data-sheet';
+import type { Workflow } from '@/lib/types';
 
 type ConfigSidebarProps = {
   node: Node<ZISState> | null;
   actions: Record<string, ZISResource>;
   allNodes: Node<ZISState>[];
+  workflow: Workflow | null;
+  selectedFlowName: string | null;
   isOpen: boolean;
   onClose: () => void;
   onNodeChange: (nodeId: string, updatedData: Partial<ZISState>) => void;
@@ -36,6 +39,8 @@ export function ConfigSidebar({
   node,
   actions,
   allNodes,
+  workflow,
+  selectedFlowName,
   isOpen,
   onClose,
   onNodeChange,
@@ -175,13 +180,13 @@ export function ConfigSidebar({
             className={cn(
               'absolute left-0 top-0 h-full w-2.5 cursor-col-resize flex items-center justify-center transition-colors z-10',
               'group-hover:bg-border/50',
-              isResizing.current && 'bg-border/80'
+              isResizing.current && 'bg-border/80',
             )}>
             <GripVertical
               className={cn(
                 'h-6 w-4 text-muted-foreground/50 transition-opacity',
                 'opacity-0 group-hover:opacity-100',
-                isResizing.current && 'opacity-100'
+                isResizing.current && 'opacity-100',
               )}
             />
           </div>
@@ -308,7 +313,14 @@ export function ConfigSidebar({
               </SheetFooter>
             </>
           )}
-          {/* <RecipeDataSheet nodes={allNodes} isOpen={isRecipeDataOpen} sidebarWidth={width} /> */}
+          <RecipeDataSheet
+            nodes={allNodes}
+            isOpen={isRecipeDataOpen}
+            sidebarWidth={width}
+            currentNode={node}
+            workflow={workflow}
+            selectedFlowName={selectedFlowName}
+          />
         </SheetContent>
       </Sheet>
     </>

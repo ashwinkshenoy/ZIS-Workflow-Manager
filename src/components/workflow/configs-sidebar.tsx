@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { Workflow } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
-import { Cog, GripVertical, Info, Loader2, Plus, Save, Trash2, QrCode, Shapes } from 'lucide-react';
+import { Cog, GripVertical, Info, Loader2, Plus, Save, Trash2, QrCode, Shapes, Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
@@ -40,6 +40,7 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
   const [newKey, setNewKey] = useState('');
   const [newValue, setNewValue] = useState<string>('');
   const [newValueType, setNewValueType] = useState<ValueType>('string');
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const isResizing = useRef(false);
   const { toast } = useToast();
@@ -204,6 +205,25 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
     });
   };
 
+  const handleCopyKey = async (key: string) => {
+    try {
+      await navigator.clipboard.writeText(`$.config.${key}`);
+      setCopiedKey(`key`);
+      toast({
+        title: 'Copied!',
+        description: `Key "${key}" copied to clipboard.`,
+        duration: 2000,
+      });
+      setTimeout(() => setCopiedKey(null), 2000);
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Copy failed',
+        description: 'Failed to copy key to clipboard.',
+      });
+    }
+  };
+
   /**
    * Saves the current configurations back to the zis api
    */
@@ -366,13 +386,13 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
           className={cn(
             'absolute left-0 top-0 h-full w-2.5 cursor-col-resize flex items-center justify-center transition-colors z-10',
             'group-hover:bg-border/50',
-            isResizing.current && 'bg-border/80'
+            isResizing.current && 'bg-border/80',
           )}>
           <GripVertical
             className={cn(
               'h-6 w-4 text-muted-foreground/50 transition-opacity',
               'opacity-0 group-hover:opacity-100',
-              isResizing.current && 'opacity-100'
+              isResizing.current && 'opacity-100',
             )}
           />
         </div>
@@ -391,6 +411,7 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
                 <Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
               </div>
             )}
+
             {error && (
               <Alert variant='default'>
                 <Info className='h-4 w-4' />
@@ -408,17 +429,33 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
                 </div>
               </Alert>
             )}
+
             {configs && (
               <div className='space-y-4'>
                 {Object.entries(configs).map(([key, value]) => (
-                  <div key={key} className='grid w-full items-start gap-1.5 relative group/item'>
-                    <Button
-                      variant='ghost'
-                      size='icon'
-                      className='absolute top-0 right-0 h-6 w-6 text-muted-foreground opacity-0 group-hover/item:opacity-100 transition-opacity'
-                      onClick={() => handleRemoveProperty(key)}>
-                      <Trash2 className='h-4 w-4' />
-                    </Button>
+                  <div key={key} className='grid w-full items-start gap-1.5 relative'>
+                    <div className='absolute top-0 right-0 flex gap-1'>
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        className='h-6 w-6 text-muted-foreground transition-opacity'
+                        onClick={() => handleCopyKey(key)}
+                        title='Copy key'>
+                        {copiedKey === key ? (
+                          <Check className='h-4 w-4 text-green-600' />
+                        ) : (
+                          <Copy className='h-4 w-4' />
+                        )}
+                      </Button>
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        className='h-6 w-6 text-muted-foreground transition-opacity'
+                        onClick={() => handleRemoveProperty(key)}
+                        title='Remove property'>
+                        <Trash2 className='h-4 w-4' />
+                      </Button>
+                    </div>
                     <Label htmlFor={key} className='text-base font-medium capitalize'>
                       {key.replace(/_/g, ' ')}
                     </Label>
@@ -482,7 +519,7 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
                         rows={15}
                         className={cn(
                           'font-mono text-xs',
-                          !isJsonValid && 'border-destructive ring-2 ring-destructive ring-offset-2'
+                          !isJsonValid && 'border-destructive ring-2 ring-destructive ring-offset-2',
                         )}
                         placeholder='Enter valid JSON...'
                       />
