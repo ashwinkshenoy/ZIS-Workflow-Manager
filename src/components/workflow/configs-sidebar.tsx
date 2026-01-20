@@ -41,6 +41,7 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
   const [newValue, setNewValue] = useState<string>('');
   const [newValueType, setNewValueType] = useState<ValueType>('string');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [editingJsonValue, setEditingJsonValue] = useState<{ [key: string]: string }>({});
 
   const isResizing = useRef(false);
   const { toast } = useToast();
@@ -145,7 +146,11 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
       });
       return;
     }
-    if (configs && newKey in configs) {
+
+    // Convert property name to lowercase and replace spaces with underscores
+    const normalizedKey = newKey.trim().toLowerCase().replace(/\s+/g, '_');
+
+    if (configs && normalizedKey in configs) {
       toast({
         variant: 'destructive',
         title: 'Key already exists',
@@ -187,7 +192,7 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
     }
 
     setConfigs((prev) => {
-      const newConfigs = prev ? { ...prev, [newKey]: parsedValue } : { [newKey]: parsedValue };
+      const newConfigs = prev ? { ...prev, [normalizedKey]: parsedValue } : { [normalizedKey]: parsedValue };
       setRawJson(JSON.stringify(newConfigs, null, 2));
       return newConfigs;
     });
@@ -300,18 +305,28 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
 
     // Render textarea for JSON objects/arrays
     if (typeof value === 'object' && value !== null) {
+      const currentEditValue = editingJsonValue[key] ?? JSON.stringify(value, null, 2);
+
       return (
         <Textarea
-          value={JSON.stringify(value, null, 2)}
+          value={currentEditValue}
           onChange={(e) => {
-            // This allows typing but doesn't parse until blur
-            // It's a compromise to avoid losing cursor position
-            // The actual update happens onBlur
+            // Store the editing value in state to allow typing
+            setEditingJsonValue((prev) => ({
+              ...prev,
+              [key]: e.target.value,
+            }));
           }}
           onBlur={(e) => {
             try {
               const parsed = JSON.parse(e.target.value);
               onValueChange(parsed);
+              // Clear editing state after successful update
+              setEditingJsonValue((prev) => {
+                const newState = { ...prev };
+                delete newState[key];
+                return newState;
+              });
             } catch (err) {
               toast({
                 variant: 'destructive',
@@ -319,9 +334,11 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
                 description: 'The value was not updated. Please correct the JSON format.',
               });
               // Revert to last valid state
-              if (configs) {
-                setRawJson(JSON.stringify(configs, null, 2));
-              }
+              setEditingJsonValue((prev) => {
+                const newState = { ...prev };
+                delete newState[key];
+                return newState;
+              });
             }
           }}
           rows={5}
