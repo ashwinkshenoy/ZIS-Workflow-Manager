@@ -170,11 +170,7 @@ export function ActionNodeForm({ data, actions, onChange }: ActionNodeFormProps)
               Edit Action
             </Button>
           ) : (
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={() => setActionsSidebarOpen(true)}
-              className='text-xs'>
+            <Button variant='outline' size='sm' onClick={() => setActionsSidebarOpen(true)} className='text-xs'>
               <Plus className='h-3 w-3' />
               Add Action
             </Button>
