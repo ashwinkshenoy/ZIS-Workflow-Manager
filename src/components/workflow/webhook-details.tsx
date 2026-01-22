@@ -40,12 +40,19 @@ export function WebhookDetails({ selectedIntegration, workflow, eventSource, eve
           if (parsedData.bearerTokenResponse?.token?.full_token) {
             setHasToken(true);
           }
+
+          // Check if webhook details already exist for this event source and type
+          const webhookKey = `webhookDetails_${eventSource}_${eventType}`;
+          if (parsedData[webhookKey]) {
+            setWebhookDetails(parsedData[webhookKey]);
+            setShowWebhookDetails(true);
+          }
         } catch (error) {
           console.error('Error parsing localStorage data:', error);
         }
       }
     }
-  }, [selectedIntegration]);
+  }, [selectedIntegration, eventSource, eventType]);
 
   /**
    * Generate token for the selected integration
