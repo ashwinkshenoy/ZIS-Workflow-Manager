@@ -164,10 +164,19 @@ export function ActionNodeForm({ data, actions, onChange }: ActionNodeFormProps)
       <div className='grid w-full gap-1.5'>
         <div className='flex items-center justify-between'>
           <Label htmlFor='action-name'>Action Name</Label>
-          {canEditAction && (
+          {canEditAction ? (
             <Button variant='outline' size='sm' onClick={handleEditActionClick} className='text-xs'>
-              <Pencil className='h-1 w-1' />
+              <Pencil className='h-3 w-3' />
               Edit Action
+            </Button>
+          ) : (
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={() => setActionsSidebarOpen(true)}
+              className='text-xs'>
+              <Plus className='h-3 w-3' />
+              Add Action
             </Button>
           )}
         </div>
