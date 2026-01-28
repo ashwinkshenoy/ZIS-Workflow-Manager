@@ -21,7 +21,25 @@ import { create } from 'domain';
 import { useIntegration } from '@/context/integration-context';
 
 type ConfigObject = Record<string, any>;
-type ValueType = 'string' | 'number' | 'boolean' | 'json';
+type ValueType = 'string' | 'number' | 'boolean' | 'json' | 'ticket_field' | 'user_field' | 'org_field';
+
+type TicketField = {
+  id: number;
+  title: string;
+  type: string;
+};
+
+type UserField = {
+  id: number;
+  title: string;
+  type: string;
+};
+
+type OrganizationField = {
+  id: number;
+  title: string;
+  type: string;
+};
 
 type ConfigsSidebarProps = {
   isOpen: boolean;
@@ -42,6 +60,13 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
   const [newValueType, setNewValueType] = useState<ValueType>('string');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [editingJsonValue, setEditingJsonValue] = useState<{ [key: string]: string }>({});
+  const [ticketFields, setTicketFields] = useState<TicketField[]>([]);
+  const [selectedTicketField, setSelectedTicketField] = useState<string>('');
+  const [userFields, setUserFields] = useState<UserField[]>([]);
+  const [selectedUserField, setSelectedUserField] = useState<string>('');
+  const [organizationFields, setOrganizationFields] = useState<OrganizationField[]>([]);
+  const [selectedOrganizationField, setSelectedOrganizationField] = useState<string>('');
+  const [loadingFields, setLoadingFields] = useState(false);
 
   const isResizing = useRef(false);
   const { toast } = useToast();
@@ -52,6 +77,75 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
       fetchConfigs();
     }
   }, [isOpen, integrationName]);
+
+  useEffect(() => {
+    if (newValueType === 'ticket_field') {
+      fetchTicketFields();
+    } else if (newValueType === 'user_field') {
+      fetchUserFields();
+    } else if (newValueType === 'org_field') {
+      fetchOrganizationFields();
+    }
+  }, [newValueType]);
+
+  /**
+   * Generic function to fetch Zendesk fields (ticket or user) and cache in sessionStorage
+   */
+  const fetchFields = async (
+    fieldType: 'ticket' | 'user' | 'organization',
+    apiMethod: () => Promise<any>,
+    setFields: React.Dispatch<React.SetStateAction<any[]>>,
+    setLoading: React.Dispatch<React.SetStateAction<boolean>>,
+  ) => {
+    const cacheKey = `zd_${fieldType}_fields`;
+
+    // Check sessionStorage first
+    const cachedFields = sessionStorage.getItem(cacheKey);
+    if (cachedFields) {
+      setFields(JSON.parse(cachedFields));
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await apiMethod();
+      const fieldsKey = `${fieldType}_fields`;
+      const fields = response[fieldsKey].map((field: any) => ({
+        id: field.id,
+        title: field.title,
+        type: field.type,
+      }));
+
+      setFields(fields);
+      sessionStorage.setItem(cacheKey, JSON.stringify(fields));
+    } catch (err: any) {
+      console.error(`Failed to fetch ${fieldType} fields:`, err);
+      toast({
+        variant: 'destructive',
+        title: `Failed to fetch ${fieldType} fields`,
+        description: err.message || 'An unknown error occurred.',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Fetches ticket fields from Zendesk API and stores in sessionStorage
+   */
+  const fetchTicketFields = () =>
+    fetchFields('ticket', () => ZDClient.getTicketFields(), setTicketFields, setLoadingFields);
+
+  /**
+   * Fetches user fields from Zendesk API and stores in sessionStorage
+   */
+  const fetchUserFields = () => fetchFields('user', () => ZDClient.getUserFields(), setUserFields, setLoadingFields);
+
+  /**
+   * Fetches organization fields from Zendesk API and stores in sessionStorage
+   */
+  const fetchOrganizationFields = () =>
+    fetchFields('organization', () => ZDClient.getOrganizationFields(), setOrganizationFields, setLoadingFields);
 
   /**
    * Initialises the configurations from the zis api
@@ -138,6 +232,105 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
   };
 
   const handleAddProperty = () => {
+    if (newValueType === 'ticket_field') {
+      if (!selectedTicketField) {
+        toast({
+          variant: 'destructive',
+          title: 'Ticket field is required',
+          description: 'Please select a ticket field.',
+        });
+        return;
+      }
+
+      const field = ticketFields.find((f) => String(f.id) === selectedTicketField);
+      if (!field) return;
+
+      const normalizedKey = `tf_${field.title
+        .trim()
+        .toLowerCase()
+        .replace(/\./g, '')
+        .replace(/[\s-]+/g, '_')}`;
+      const parsedValue = field.id;
+
+      setConfigs((prev) => {
+        const newConfigs = prev ? { ...prev, [normalizedKey]: parsedValue } : { [normalizedKey]: parsedValue };
+        setRawJson(JSON.stringify(newConfigs, null, 2));
+        return newConfigs;
+      });
+
+      setNewKey('');
+      setNewValue('');
+      setSelectedTicketField('');
+      setNewValueType('string');
+      return;
+    }
+
+    if (newValueType === 'user_field') {
+      if (!selectedUserField) {
+        toast({
+          variant: 'destructive',
+          title: 'User field is required',
+          description: 'Please select a user field.',
+        });
+        return;
+      }
+
+      const field = userFields.find((f) => String(f.id) === selectedUserField);
+      if (!field) return;
+
+      const normalizedKey = `uf_${field.title
+        .trim()
+        .toLowerCase()
+        .replace(/\./g, '')
+        .replace(/[\s-]+/g, '_')}`;
+      const parsedValue = field.id;
+
+      setConfigs((prev) => {
+        const newConfigs = prev ? { ...prev, [normalizedKey]: parsedValue } : { [normalizedKey]: parsedValue };
+        setRawJson(JSON.stringify(newConfigs, null, 2));
+        return newConfigs;
+      });
+
+      setNewKey('');
+      setNewValue('');
+      setSelectedUserField('');
+      setNewValueType('string');
+      return;
+    }
+
+    if (newValueType === 'org_field') {
+      if (!selectedOrganizationField) {
+        toast({
+          variant: 'destructive',
+          title: 'Organization field is required',
+          description: 'Please select an organization field.',
+        });
+        return;
+      }
+
+      const field = organizationFields.find((f) => String(f.id) === selectedOrganizationField);
+      if (!field) return;
+
+      const normalizedKey = `of_${field.title
+        .trim()
+        .toLowerCase()
+        .replace(/\./g, '')
+        .replace(/[\s-]+/g, '_')}`;
+      const parsedValue = field.id;
+
+      setConfigs((prev) => {
+        const newConfigs = prev ? { ...prev, [normalizedKey]: parsedValue } : { [normalizedKey]: parsedValue };
+        setRawJson(JSON.stringify(newConfigs, null, 2));
+        return newConfigs;
+      });
+
+      setNewKey('');
+      setNewValue('');
+      setSelectedOrganizationField('');
+      setNewValueType('string');
+      return;
+    }
+
     if (!newKey.trim()) {
       toast({
         variant: 'destructive',
@@ -347,10 +540,64 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
       );
     }
 
+    // Render number input for number type
+    if (typeof value === 'number') {
+      return (
+        <Input
+          type='number'
+          value={value}
+          onChange={(e) => {
+            const numValue = parseFloat(e.target.value);
+            onValueChange(isNaN(numValue) ? e.target.value : numValue);
+          }}
+          className='text-sm'
+        />
+      );
+    }
+
     return <Input value={String(value)} onChange={(e) => onValueChange(e.target.value)} className='text-sm' />;
   };
 
   const renderNewValueInput = () => {
+    if (newValueType === 'ticket_field') {
+      const field = ticketFields.find((f) => String(f.id) === selectedTicketField);
+      return (
+        <Input
+          id='new-value-ticket-field'
+          value={field ? field.id : ''}
+          type='number'
+          disabled
+          placeholder='Select a ticket field above'
+        />
+      );
+    }
+
+    if (newValueType === 'user_field') {
+      const field = userFields.find((f) => String(f.id) === selectedUserField);
+      return (
+        <Input
+          id='new-value-user-field'
+          value={field ? field.id : ''}
+          type='number'
+          disabled
+          placeholder='Select a user field above'
+        />
+      );
+    }
+
+    if (newValueType === 'org_field') {
+      const field = organizationFields.find((f) => String(f.id) === selectedOrganizationField);
+      return (
+        <Input
+          id='new-value-org-field'
+          value={field ? field.id : ''}
+          type='number'
+          disabled
+          placeholder='Select a organization field above'
+        />
+      );
+    }
+
     switch (newValueType) {
       case 'boolean':
         return (
@@ -369,7 +616,7 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
             id='new-value-json'
             value={newValue}
             onChange={(e) => setNewValue(e.target.value)}
-            placeholder='e.g., { "foo": "bar" } or [1, 2, 3]'
+            placeholder='e.g: { "foo": "bar" } or [1, 2, 3]'
             className='font-mono text-xs'
             rows={3}
           />
@@ -381,7 +628,7 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
             type='number'
             value={newValue}
             onChange={(e) => setNewValue(e.target.value)}
-            placeholder='e.g., 123.45'
+            placeholder='e.g: 123.45'
           />
         );
       case 'string':
@@ -391,7 +638,7 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
             id='new-value-string'
             value={newValue}
             onChange={(e) => setNewValue(e.target.value)}
-            placeholder='e.g., some_value'
+            placeholder='e.g: some_value'
           />
         );
     }
@@ -451,6 +698,7 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
 
             {configs && (
               <div className='space-y-4'>
+                {/* Render existing properties section */}
                 {Object.entries(configs).map(([key, value]) => (
                   <div key={key} className='grid w-full items-start gap-1.5 relative'>
                     <div className='absolute top-0 right-0 flex gap-1'>
@@ -476,7 +724,13 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
                       </Button>
                     </div>
                     <Label htmlFor={key} className='text-base font-medium capitalize'>
-                      {key.replace(/_/g, ' ')}
+                      {key.startsWith('tf_')
+                        ? `TF: ${key.slice(3).replace(/_/g, ' ')}`
+                        : key.startsWith('uf_')
+                          ? `UF: ${key.slice(3).replace(/_/g, ' ')}`
+                          : key.startsWith('of_')
+                            ? `OF: ${key.slice(3).replace(/_/g, ' ')}`
+                            : key.replace(/_/g, ' ')}
                     </Label>
                     {renderField(key, value)}
                   </div>
@@ -484,15 +738,21 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
 
                 <Separator className='!my-8' />
 
+                {/* Add new property section */}
                 <div className='space-y-4 rounded-lg border bg-muted/30 p-4'>
                   <h4 className='font-medium text-base'>Add New Property</h4>
                   <div className='space-y-4'>
+                    {/* Type Selector */}
                     <div className='grid w-full items-center gap-1.5'>
                       <Label htmlFor='new-value-type'>Type</Label>
                       <Select
                         value={newValueType}
                         onValueChange={(v: ValueType) => {
                           setNewValueType(v);
+                          setNewValue('');
+                          setSelectedTicketField('');
+                          setSelectedUserField('');
+                          setNewKey('');
                           setNewValue('');
                         }}>
                         <SelectTrigger id='new-value-type' className='w-full'>
@@ -503,9 +763,134 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
                           <SelectItem value='number'>Number</SelectItem>
                           <SelectItem value='boolean'>Boolean</SelectItem>
                           <SelectItem value='json'>JSON</SelectItem>
+                          <SelectItem value='ticket_field'>Ticket Field</SelectItem>
+                          <SelectItem value='user_field'>User Field</SelectItem>
+                          <SelectItem value='org_field'>Organization Field</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {/* Ticket field options */}
+                    {newValueType === 'ticket_field' && (
+                      <div className='grid w-full items-center gap-1.5'>
+                        <Label htmlFor='ticket-field-select'>Select Ticket Field</Label>
+                        {loadingFields ? (
+                          <div className='flex items-center justify-center py-4'>
+                            <Loader2 className='h-4 w-4 animate-spin text-muted-foreground' />
+                          </div>
+                        ) : (
+                          <Select
+                            value={selectedTicketField}
+                            onValueChange={(value) => {
+                              setSelectedTicketField(value);
+                              // Update property name when field is selected
+                              const field = ticketFields.find((f) => String(f.id) === value);
+                              if (field) {
+                                const normalizedKey = `tf_${field.title
+                                  .trim()
+                                  .toLowerCase()
+                                  .replace(/\./g, '')
+                                  .replace(/[\s-]+/g, '_')}`;
+                                setNewKey(normalizedKey);
+                                setNewValue(String(field.id));
+                              }
+                            }}>
+                            <SelectTrigger id='ticket-field-select'>
+                              <SelectValue placeholder='Select a ticket field' />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ticketFields.map((field) => (
+                                <SelectItem key={field.id} value={String(field.id)}>
+                                  {field.title}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+                    )}
+
+                    {/* User field options */}
+                    {newValueType === 'user_field' && (
+                      <div className='grid w-full items-center gap-1.5'>
+                        <Label htmlFor='user-field-select'>Select User Field</Label>
+                        {loadingFields ? (
+                          <div className='flex items-center justify-center py-4'>
+                            <Loader2 className='h-4 w-4 animate-spin text-muted-foreground' />
+                          </div>
+                        ) : (
+                          <Select
+                            value={selectedUserField}
+                            onValueChange={(value) => {
+                              setSelectedUserField(value);
+                              // Update property name when field is selected
+                              const field = userFields.find((f) => String(f.id) === value);
+                              if (field) {
+                                const normalizedKey = `uf_${field.title
+                                  .trim()
+                                  .toLowerCase()
+                                  .replace(/\./g, '')
+                                  .replace(/[\s-]+/g, '_')}`;
+                                setNewKey(normalizedKey);
+                                setNewValue(String(field.id));
+                              }
+                            }}>
+                            <SelectTrigger id='user-field-select'>
+                              <SelectValue placeholder='Select a user field' />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {userFields.map((field) => (
+                                <SelectItem key={field.id} value={String(field.id)}>
+                                  {field.title}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Organization field options */}
+                    {newValueType === 'org_field' && (
+                      <div className='grid w-full items-center gap-1.5'>
+                        <Label htmlFor='org-field-select'>Select Organization Field</Label>
+                        {loadingFields ? (
+                          <div className='flex items-center justify-center py-4'>
+                            <Loader2 className='h-4 w-4 animate-spin text-muted-foreground' />
+                          </div>
+                        ) : (
+                          <Select
+                            value={selectedOrganizationField}
+                            onValueChange={(value) => {
+                              setSelectedOrganizationField(value);
+                              // Update property name when field is selected
+                              const field = organizationFields.find((f) => String(f.id) === value);
+                              if (field) {
+                                const normalizedKey = `of_${field.title
+                                  .trim()
+                                  .toLowerCase()
+                                  .replace(/\./g, '')
+                                  .replace(/[\s-]+/g, '_')}`;
+                                setNewKey(normalizedKey);
+                                setNewValue(String(field.id));
+                              }
+                            }}>
+                            <SelectTrigger id='org-field-select'>
+                              <SelectValue placeholder='Select an organization field' />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {organizationFields.map((field) => (
+                                <SelectItem key={field.id} value={String(field.id)}>
+                                  {field.title}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Property Name */}
                     <div className='grid w-full items-center gap-1.5'>
                       <Label htmlFor='new-key'>Property Name</Label>
                       <Input
@@ -513,13 +898,21 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
                         value={newKey}
                         onChange={(e) => setNewKey(e.target.value)}
                         placeholder='new_config_key'
+                        disabled={
+                          newValueType === 'ticket_field' ||
+                          newValueType === 'user_field' ||
+                          newValueType === 'org_field'
+                        }
                       />
                     </div>
+
+                    {/* Property Value */}
                     <div className='grid w-full items-center gap-1.5'>
                       <Label htmlFor='new-value'>Property Value</Label>
                       {renderNewValueInput()}
                     </div>
                   </div>
+
                   <Button onClick={handleAddProperty} size='sm' className='w-full'>
                     <Plus className='mr-2 h-4 w-4' />
                     Add Property

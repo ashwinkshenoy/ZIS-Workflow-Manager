@@ -211,7 +211,7 @@ const ZDClient = {
     return this.request(
       `/api/services/zis/integrations/${integrationKey}/configs?filter[scope]=${integrationKey}_settings`,
       {},
-      { method: 'GET' }
+      { method: 'GET' },
     );
   },
 
@@ -237,7 +237,7 @@ const ZDClient = {
     return this.request(
       `/api/services/zis/integrations/${integrationKey}/configs/${integrationKey}_settings`,
       JSON.stringify(payload),
-      { method: 'PUT' }
+      { method: 'PUT' },
     );
   },
 
@@ -271,7 +271,7 @@ const ZDClient = {
       {},
       {
         method: 'PUT',
-      }
+      },
     );
   },
 
@@ -345,7 +345,7 @@ const ZDClient = {
       {},
       {
         method: 'POST',
-      }
+      },
     );
   },
 
@@ -361,7 +361,7 @@ const ZDClient = {
       {},
       {
         method: 'DELETE',
-      }
+      },
     );
   },
 
@@ -380,6 +380,57 @@ const ZDClient = {
         Authorization: `Bearer ${fullToken}`,
       },
     });
+  },
+
+  /**
+   * Get ticket fields
+   * @returns {Promise<any>}
+   */
+  async getTicketFields() {
+    return this.request(
+      `/api/v2/ticket_fields.json`,
+      {},
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+  },
+
+  /**
+   * Get user fields
+   * @returns {Promise<any>}
+   */
+  async getUserFields() {
+    return this.request(
+      `/api/v2/user_fields.json`,
+      {},
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+  },
+
+  /**
+   * Get organization fields
+   * @returns {Promise<any>}
+   */
+  async getOrganizationFields() {
+    return this.request(
+      `/api/v2/organization_fields.json`,
+      {},
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
   },
 };
 

@@ -282,6 +282,11 @@ export function AppHeader({
             </DropdownMenuTrigger>
 
             <DropdownMenuContent align='end'>
+              <DropdownMenuItem onClick={() => onManageSettings()} disabled={!workflow}>
+                <Pencil className='mr-2 h-4 w-4' />
+                <span>Settings</span>
+              </DropdownMenuItem>
+
               {workflow && (
                 <>
                   <DropdownMenuItem onClick={onNewFlow}>
@@ -300,11 +305,6 @@ export function AppHeader({
                   <DropdownMenuSeparator />
                 </>
               )}
-
-              <DropdownMenuItem onClick={() => onManageSettings()} disabled={!workflow}>
-                <Pencil className='mr-2 h-4 w-4' />
-                <span>Modify Settings</span>
-              </DropdownMenuItem>
 
               <DropdownMenuSeparator />
 
