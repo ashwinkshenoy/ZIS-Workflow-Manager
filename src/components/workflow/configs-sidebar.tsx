@@ -440,6 +440,7 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
     setIsSaving(true);
     try {
       await ZDClient.updateZisConfigApi({ config: configs }, integrationName);
+      setIntegrationConfig(configs);
       onClose();
     } catch (err: any) {
       console.error('Failed to save configs:', err);
