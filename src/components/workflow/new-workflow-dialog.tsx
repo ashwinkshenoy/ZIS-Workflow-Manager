@@ -152,7 +152,7 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
     }
 
     // Validate name format (lowercase letters and underscores only)
-    const validNamePattern = /^[a-z_]+$/;
+    const validNamePattern = /^[a-z0-9_]+$/;
     if (!validNamePattern.test(name)) {
       toast({
         variant: 'destructive',
@@ -223,7 +223,7 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
     }
 
     // Validate name format (lowercase letters and underscores only)
-    const validNamePattern = /^[a-z_]+$/;
+    const validNamePattern = /^[a-z0-9_]+$/;
     if (!validNamePattern.test(name)) {
       toast({
         variant: 'destructive',
@@ -257,7 +257,7 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
       } else {
         // Regenerate integration token if existing integration is present
         const generateNewIntegrationTokenResponse = await ZDClient.generateNewIntegrationToken(
-          selectedIntegrationObject.zendesk_oauth_client.id
+          selectedIntegrationObject.zendesk_oauth_client.id,
         );
         createIntegrationResponse = {
           ...selectedIntegrationObject,
@@ -320,7 +320,7 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
           oauthClientResponse: createOauthClientResponse,
           oauthRedirectURL: redirectURL,
           isLoading: true,
-        })
+        }),
       );
     } catch (error: any) {
       console.error('Error creating integration:', error);
@@ -612,7 +612,7 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
                   <Select
                     value={eventCategory}
                     onValueChange={(
-                      value: 'ticket' | 'user' | 'organization' | 'customobject' | 'activity' | 'custom'
+                      value: 'ticket' | 'user' | 'organization' | 'customobject' | 'activity' | 'custom',
                     ) => {
                       setEventCategory(value);
                       setEventType(''); // Reset event type when category changes
@@ -655,12 +655,12 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
                               {eventCategory === 'ticket'
                                 ? 'Ticket Events'
                                 : eventCategory === 'user'
-                                ? 'User Events'
-                                : eventCategory === 'organization'
-                                ? 'Organization Events'
-                                : eventCategory === 'customobject'
-                                ? 'Custom Object Events'
-                                : 'Activity Events'}
+                                  ? 'User Events'
+                                  : eventCategory === 'organization'
+                                    ? 'Organization Events'
+                                    : eventCategory === 'customobject'
+                                      ? 'Custom Object Events'
+                                      : 'Activity Events'}
                             </u>
                           </SelectLabel>
                           {EVENT_TYPES[eventCategory].map((event) => (
@@ -746,13 +746,13 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
           className={cn(
             'absolute left-0 top-0 h-full w-2.5 cursor-col-resize flex items-center justify-center transition-colors z-10',
             'group-hover:bg-border/50',
-            isResizing.current && 'bg-border/80'
+            isResizing.current && 'bg-border/80',
           )}>
           <GripVertical
             className={cn(
               'h-6 w-4 text-muted-foreground/50 transition-opacity',
               'opacity-0 group-hover:opacity-100',
-              isResizing.current && 'opacity-100'
+              isResizing.current && 'opacity-100',
             )}
           />
         </div>
