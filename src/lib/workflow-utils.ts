@@ -3,36 +3,36 @@ import type { ZISFlow, Workflow, ProcessedNode, Edge, ZISChoice, ZISCondition, Z
 const X_SPACING = 600;
 const Y_SPACING = 200;
 
-export const conditionTypes = [
-  'StringEquals',
-  'StringEqualsPath',
-  'StringLessThan',
-  'StringGreaterThan',
-  'StringLessThanEquals',
-  'StringGreaterThanEquals',
-  'NumericEquals',
-  'NumericEqualsPath',
-  'NumericLessThan',
-  'NumericLessThanPath',
-  'NumericGreaterThan',
-  'NumericGreaterThanPath',
-  'NumericLessThanEquals',
-  'NumericLessThanEqualsPath',
-  'NumericGreaterThanEquals',
-  'NumericGreaterThanEqualsPath',
-  'BooleanEquals',
-  'BooleanEqualsPath',
-  'TimestampEquals',
-  'TimestampLessThan',
-  'TimestampGreaterThan',
-  'TimestampLessThanEquals',
-  'TimestampGreaterThanEquals',
-  'IsPresent',
-  'IsNull',
-];
+export const conditionTypes: Record<string, string> = {
+  StringEquals: 'String Equals',
+  StringEqualsPath: 'String Equals Path',
+  StringLessThan: 'String Less Than',
+  StringGreaterThan: 'String Greater Than',
+  StringLessThanEquals: 'String Less Than Equals',
+  StringGreaterThanEquals: 'String Greater Than Equals',
+  NumericEquals: 'Numeric Equals',
+  NumericEqualsPath: 'Numeric Equals Path',
+  NumericLessThan: 'Numeric Less Than',
+  NumericLessThanPath: 'Numeric Less Than Path',
+  NumericGreaterThan: 'Numeric Greater Than',
+  NumericGreaterThanPath: 'Numeric Greater Than Path',
+  NumericLessThanEquals: 'Numeric Less Than Equals',
+  NumericLessThanEqualsPath: 'Numeric Less Than Equals Path',
+  NumericGreaterThanEquals: 'Numeric Greater Than Equals',
+  NumericGreaterThanEqualsPath: 'Numeric Greater Than Equals Path',
+  BooleanEquals: 'Boolean Equals',
+  BooleanEqualsPath: 'Boolean Equals Path',
+  TimestampEquals: 'Timestamp Equals',
+  TimestampLessThan: 'Timestamp Less Than',
+  TimestampGreaterThan: 'Timestamp Greater Than',
+  TimestampLessThanEquals: 'Timestamp Less Than Equals',
+  TimestampGreaterThanEquals: 'Timestamp Greater Than Equals',
+  IsPresent: 'Is Present',
+  IsNull: 'Is Null',
+};
 
 export function getCondition(condition: ZISCondition): [string, any] {
-  for (const type of conditionTypes) {
+  for (const type of Object.keys(conditionTypes)) {
     if (type in condition) {
       return [type, condition[type as keyof ZISCondition]];
     }
@@ -42,7 +42,7 @@ export function getCondition(condition: ZISCondition): [string, any] {
   if (key) {
     return [key, condition[key]];
   }
-  return [conditionTypes[0], ''];
+  return [Object.keys(conditionTypes)[0], ''];
 }
 
 export function isSingleCondition(choice: ZISChoice): boolean {
@@ -73,7 +73,7 @@ function getSuccessors(nodeKey: string, states: Record<string, ZISState>): strin
 
 export function parseWorkflow(
   workflow: Workflow,
-  flowName: string | null
+  flowName: string | null,
 ): {
   nodes: ProcessedNode[];
   edges: Edge[];
@@ -223,14 +223,14 @@ export function getNextNodeId(existingIds: string[]): string {
  */
 export function getJobSpecDetails(
   workflow: Workflow,
-  selectedFlowName: string
+  selectedFlowName: string,
 ): {
   jobspecName: string;
   event_source: string;
   event_type: string;
 } | null {
   const jobspecEntry = Object.entries(workflow.resources).find(
-    ([_, resource]) => resource.type === 'ZIS::JobSpec' && resource.properties.flow_name?.includes(selectedFlowName)
+    ([_, resource]) => resource.type === 'ZIS::JobSpec' && resource.properties.flow_name?.includes(selectedFlowName),
   );
 
   if (!jobspecEntry) {
@@ -263,7 +263,7 @@ export function getJobSpecDetails(
 export function createFlowResource(
   flowResourceKey: string,
   integrationKey: string,
-  configSettingsName: string
+  configSettingsName: string,
 ): ZISFlow {
   return {
     type: 'ZIS::Flow',
@@ -327,7 +327,7 @@ export function createNewWorkflow(
   description: string,
   jobspecName: string,
   eventSource: string,
-  eventType: string
+  eventType: string,
 ): Workflow {
   const integrationKey = name.trim().toLowerCase().replace(/\s+/g, '-');
   const flowResourceKey = `${jobspecName}_flow`;

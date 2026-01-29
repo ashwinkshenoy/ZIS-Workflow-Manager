@@ -53,6 +53,7 @@ export function ConfigSidebar({
   const isResizing = useRef(false);
   const [formData, setFormData] = useState<ZISState | null>(null);
   const [isRecipeDataOpen, setRecipeDataOpen] = useState(false);
+  const [accordionValue, setAccordionValue] = useState<string[]>(['item-0']);
 
   const debouncedOnNodeChange = useDebouncedCallback(onNodeChange, 300);
 
@@ -140,6 +141,9 @@ export function ConfigSidebar({
     };
     const newChoices = [...(formData.Choices || []), newChoice];
     handleFormChange({ Choices: newChoices });
+    // Open the newly added accordion item
+    const newIndex = newChoices.length - 1;
+    setAccordionValue([...accordionValue, `item-${newIndex}`]);
   };
 
   const handleRemoveChoice = (index: number) => {
@@ -247,7 +251,11 @@ export function ConfigSidebar({
                   {isChoiceNode && (
                     <>
                       <Separator />
-                      <Accordion type='multiple' className='w-full' defaultValue={[`item-0`]}>
+                      <Accordion
+                        type='multiple'
+                        className='w-full'
+                        value={accordionValue}
+                        onValueChange={setAccordionValue}>
                         {formData.Choices?.map((choice: ZISChoice, index: number) => (
                           <AccordionItem value={`item-${index}`} key={index}>
                             <div className='flex w-full items-center'>
