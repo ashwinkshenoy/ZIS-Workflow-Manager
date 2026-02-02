@@ -26,6 +26,7 @@ export function ActionHttpForm({ data, onChange }: ActionHttpFormProps) {
   const [localName, setLocalName] = useState(data.name || '');
   const [localMethod, setLocalMethod] = useState(definition.method || '');
   const [localConnectionName, setLocalConnectionName] = useState(definition.connectionName || '');
+  const [jsonError, setJsonError] = useState<string | null>(null);
 
   // Sync local state when prop changes
   useEffect(() => {
@@ -166,17 +167,22 @@ export function ActionHttpForm({ data, onChange }: ActionHttpFormProps) {
     onChange({ ...data, definition: newDefinition });
   };
 
+  /**
+   * Handles changes to the request body
+   * @param {String} value - The new request body value (either JSON string or path)
+   */
   const handleBodyChange = (value: string) => {
     const newDefinition = { ...definition };
     if ('requestBody.$' in newDefinition) {
       newDefinition['requestBody.$'] = value;
+      setJsonError(null);
     } else {
       try {
         newDefinition.requestBody = JSON.parse(value);
+        setJsonError(null);
       } catch (e) {
-        // If JSON is invalid while typing, we don't update to prevent breaking the app state
-        // A better implementation would show a validation error message in the UI
-        console.warn('Invalid JSON in textarea');
+        // Set error message but don't prevent the change
+        setJsonError((e as Error).message || 'Invalid JSON format');
         return;
       }
     }
@@ -207,6 +213,38 @@ export function ActionHttpForm({ data, onChange }: ActionHttpFormProps) {
   } else {
     bodyValue = '';
   }
+
+  // Local state for body value to avoid lag
+  const [localBodyValue, setLocalBodyValue] = useState(bodyValue);
+
+  useEffect(() => {
+    setLocalBodyValue(bodyValue);
+  }, [bodyValue]);
+
+  // Debounced body change handler
+  const debouncedBodyChange = useDebouncedCallback(handleBodyChange, 400);
+
+  /**
+   * Handles local body value changes with immediate validation for JSON
+   */
+  const handleLocalBodyChange = (value: string) => {
+    setLocalBodyValue(value);
+
+    // Immediate validation for JSON type
+    if (bodyType === 'json') {
+      try {
+        JSON.parse(value);
+        setJsonError(null);
+      } catch (e) {
+        setJsonError((e as Error).message || 'Invalid JSON format');
+      }
+    } else {
+      setJsonError(null);
+    }
+
+    // Debounce the actual update
+    debouncedBodyChange(value);
+  };
 
   return (
     <div className='space-y-4'>
@@ -300,13 +338,13 @@ export function ActionHttpForm({ data, onChange }: ActionHttpFormProps) {
             </RadioGroup>
           </div>
           <Textarea
-            defaultValue={bodyValue}
-            onBlur={(e) => handleBodyChange(e.target.value)}
-            key={bodyType}
+            value={localBodyValue}
+            onChange={(e) => handleLocalBodyChange(e.target.value)}
             rows={5}
-            className='font-mono text-xs'
+            className={`font-mono text-xs ${jsonError && bodyType === 'json' ? 'border-destructive ring-2 ring-destructive ring-offset-2' : ''}`}
             placeholder={bodyType === 'path' ? 'e.g., $.input_data' : '{ "key": "value" }'}
           />
+          {jsonError && bodyType === 'json' && <p className='text-sm text-destructive mt-1'>{jsonError}</p>}
         </div>
       </div>
     </div>
