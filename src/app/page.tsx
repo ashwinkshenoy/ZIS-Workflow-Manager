@@ -22,12 +22,15 @@ import type { NodeProps } from 'reactflow';
 import ZDClient from '@/lib/ZDClient';
 import { useIntegration } from '@/context/integration-context';
 import { DeleteFlowDialog } from '@/components/workflow/delete-flow-dialog';
+import { OnboardingModal } from '@/components/workflow/onboarding-modal';
+import { WorkflowTour } from '@/components/workflow/workflow-tour';
 
 export default function Home() {
   const [workflow, setWorkflow] = useState<Workflow | null>(null);
   const [availableFlows, setAvailableFlows] = useState<string[]>([]);
   const [selectedFlowName, setSelectedFlowName] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<Node<ZISState> | null>(null);
+  const [isOnboardingModalOpen, setOnboardingModalOpen] = useState(false);
   const [nodeToDelete, setNodeToDelete] = useState<string | null>(null);
   const [isNewWorkflowDialogOpen, setNewWorkflowDialogOpen] = useState(false);
   const [isEditWorkflowDialogOpen, setEditWorkflowDialogOpen] = useState(false);
@@ -42,12 +45,26 @@ export default function Home() {
     setSelectedIntegrationObject,
     selectedActionForEdit,
     setSelectedActionForEdit,
+    showWorkflowTour,
+    setShowWorkflowTour,
   } = useIntegration();
   const [isDeleteFlowDialogOpen, setDeleteFlowDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+  // Check for onboarding status on initial load
+  useEffect(() => {
+    try {
+      const hasSeenOnboarding = localStorage.getItem('zd_onboarding');
+      if (!hasSeenOnboarding) {
+        setOnboardingModalOpen(true);
+      }
+    } catch (_) {
+      // Ignore storage errors
+    }
+  }, []);
 
   useEffect(() => {
     if (workflow) {
@@ -569,7 +586,7 @@ export default function Home() {
         definition: {
           method: 'GET',
           path: '/api/v2/example',
-          connectionName: 'example_connection',
+          connectionName: '',
           headers: [{ key: 'Content-Type', value: 'application/json' }],
         },
       },
@@ -756,6 +773,12 @@ export default function Home() {
         onClose={() => setDeleteFlowDialogOpen(false)}
         onConfirm={confirmFlowDelete}
         flowId={selectedFlowName}
+      />
+      <OnboardingModal isOpen={isOnboardingModalOpen} onClose={() => setOnboardingModalOpen(false)} />
+      <WorkflowTour
+        isOpen={showWorkflowTour}
+        onClose={() => setShowWorkflowTour(false)}
+        onComplete={() => setShowWorkflowTour(false)}
       />
     </div>
   );

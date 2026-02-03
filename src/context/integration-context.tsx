@@ -32,6 +32,9 @@ type IntegrationContextType = {
 
   integrationConfig: Record<string, any> | null;
   setIntegrationConfig: (config: Record<string, any> | null) => void;
+
+  showWorkflowTour: boolean;
+  setShowWorkflowTour: (show: boolean) => void;
 };
 
 /**
@@ -60,6 +63,7 @@ export function IntegrationProvider({ children }: { children: ReactNode }) {
   const [selectedActionForEdit, setSelectedActionForEdit] = useState<string | null>(null);
   const [isPlayground, setIsPlayground] = useState<boolean>(false);
   const [integrationConfig, setIntegrationConfig] = useState<Record<string, any> | null>(null);
+  const [showWorkflowTour, setShowWorkflowTour] = useState<boolean>(false);
 
   return (
     <IntegrationContext.Provider
@@ -87,6 +91,9 @@ export function IntegrationProvider({ children }: { children: ReactNode }) {
 
         integrationConfig,
         setIntegrationConfig,
+
+        showWorkflowTour,
+        setShowWorkflowTour,
       }}>
       {children}
     </IntegrationContext.Provider>
