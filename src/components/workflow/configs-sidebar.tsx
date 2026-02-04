@@ -60,6 +60,7 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
   const [newValueType, setNewValueType] = useState<ValueType>('string');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [editingJsonValue, setEditingJsonValue] = useState<{ [key: string]: string }>({});
+  const [fieldJsonErrors, setFieldJsonErrors] = useState<{ [key: string]: string }>({});
   const [ticketFields, setTicketFields] = useState<TicketField[]>([]);
   const [selectedTicketField, setSelectedTicketField] = useState<string>('');
   const [userFields, setUserFields] = useState<UserField[]>([]);
@@ -67,6 +68,7 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
   const [organizationFields, setOrganizationFields] = useState<OrganizationField[]>([]);
   const [selectedOrganizationField, setSelectedOrganizationField] = useState<string>('');
   const [loadingFields, setLoadingFields] = useState(false);
+  const [jsonError, setJsonError] = useState<string | null>(null);
 
   const isResizing = useRef(false);
   const { toast } = useToast();
@@ -340,6 +342,16 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
       return;
     }
 
+    // Check for JSON errors
+    if (newValueType === 'json' && jsonError) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid JSON',
+        description: 'Please fix the JSON syntax error before adding the property.',
+      });
+      return;
+    }
+
     // Convert property name to lowercase and replace spaces with underscores
     const normalizedKey = newKey.trim().toLowerCase().replace(/\s+/g, '_');
 
@@ -393,6 +405,7 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
     setNewKey('');
     setNewValue('');
     setNewValueType('string');
+    setJsonError(null);
   };
 
   const handleRemoveProperty = (keyToRemove: string) => {
@@ -442,6 +455,12 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
       await ZDClient.updateZisConfigApi({ config: configs }, integrationName);
       setIntegrationConfig(configs);
       onClose();
+      toast({
+        variant: 'default',
+        title: 'Saved Configuration Successfully',
+        description: '',
+        duration: 3000,
+      });
     } catch (err: any) {
       console.error('Failed to save configs:', err);
       toast({
@@ -500,44 +519,73 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
     // Render textarea for JSON objects/arrays
     if (typeof value === 'object' && value !== null) {
       const currentEditValue = editingJsonValue[key] ?? JSON.stringify(value, null, 2);
+      const hasError = fieldJsonErrors[key];
 
       return (
-        <Textarea
-          value={currentEditValue}
-          onChange={(e) => {
-            // Store the editing value in state to allow typing
-            setEditingJsonValue((prev) => ({
-              ...prev,
-              [key]: e.target.value,
-            }));
-          }}
-          onBlur={(e) => {
-            try {
-              const parsed = JSON.parse(e.target.value);
-              onValueChange(parsed);
-              // Clear editing state after successful update
-              setEditingJsonValue((prev) => {
-                const newState = { ...prev };
-                delete newState[key];
-                return newState;
-              });
-            } catch (err) {
-              toast({
-                variant: 'destructive',
-                title: `Invalid JSON for ${key}`,
-                description: 'The value was not updated. Please correct the JSON format.',
-              });
-              // Revert to last valid state
-              setEditingJsonValue((prev) => {
-                const newState = { ...prev };
-                delete newState[key];
-                return newState;
-              });
-            }
-          }}
-          rows={5}
-          className='font-mono text-xs'
-        />
+        <>
+          <Textarea
+            value={currentEditValue}
+            onChange={(e) => {
+              setIsJsonValid(true);
+              const value = e.target.value;
+              // Store the editing value in state to allow typing
+              setEditingJsonValue((prev) => ({
+                ...prev,
+                [key]: value,
+              }));
+
+              // Immediate validation for JSON
+              try {
+                JSON.parse(value);
+                setFieldJsonErrors((prev) => {
+                  const newErrors = { ...prev };
+                  delete newErrors[key];
+                  return newErrors;
+                });
+              } catch (err) {
+                setFieldJsonErrors((prev) => ({
+                  ...prev,
+                  [key]: (err as Error).message || 'Invalid JSON format',
+                }));
+                setIsJsonValid(false);
+              }
+            }}
+            onBlur={(e) => {
+              try {
+                setIsJsonValid(true);
+                const parsed = JSON.parse(e.target.value);
+                onValueChange(parsed);
+                // Clear editing state after successful update
+                setEditingJsonValue((prev) => {
+                  const newState = { ...prev };
+                  delete newState[key];
+                  return newState;
+                });
+                setFieldJsonErrors((prev) => {
+                  const newErrors = { ...prev };
+                  delete newErrors[key];
+                  return newErrors;
+                });
+              } catch (err) {
+                toast({
+                  variant: 'destructive',
+                  title: `Invalid JSON for ${key}`,
+                  description: 'The value was not updated. Please correct the JSON format.',
+                });
+                setIsJsonValid(false);
+                // Revert to last valid state
+                setEditingJsonValue((prev) => {
+                  const newState = { ...prev };
+                  delete newState[key];
+                  return newState;
+                });
+              }
+            }}
+            rows={5}
+            className={cn('font-mono text-xs', hasError && 'border-destructive ring-2 ring-destructive ring-offset-2')}
+          />
+          {hasError && <p className='text-sm text-destructive mt-1'>{hasError}</p>}
+        </>
       );
     }
 
@@ -613,14 +661,34 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
         );
       case 'json':
         return (
-          <Textarea
-            id='new-value-json'
-            value={newValue}
-            onChange={(e) => setNewValue(e.target.value)}
-            placeholder='e.g: { "foo": "bar" } or [1, 2, 3]'
-            className='font-mono text-xs'
-            rows={3}
-          />
+          <>
+            <Textarea
+              id='new-value-json'
+              value={newValue}
+              onChange={(e) => {
+                const value = e.target.value;
+                setNewValue(value);
+                // Immediate validation for JSON
+                if (value.trim() === '') {
+                  setJsonError(null);
+                  return;
+                }
+                try {
+                  JSON.parse(value);
+                  setJsonError(null);
+                } catch (err) {
+                  setJsonError((err as Error).message || 'Invalid JSON format');
+                }
+              }}
+              placeholder='e.g: { "foo": "bar" } or [1, 2, 3]'
+              className={cn(
+                'font-mono text-xs',
+                jsonError && 'border-destructive ring-2 ring-destructive ring-offset-2',
+              )}
+              rows={3}
+            />
+            {jsonError && <p className='text-sm text-destructive mt-1'>{jsonError}</p>}
+          </>
         );
       case 'number':
         return (
@@ -753,8 +821,10 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
                           setNewValue('');
                           setSelectedTicketField('');
                           setSelectedUserField('');
+                          setSelectedOrganizationField('');
                           setNewKey('');
                           setNewValue('');
+                          setJsonError(null);
                         }}>
                         <SelectTrigger id='new-value-type' className='w-full'>
                           <SelectValue />
