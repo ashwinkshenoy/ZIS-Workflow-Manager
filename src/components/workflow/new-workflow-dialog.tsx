@@ -698,6 +698,7 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
                     <SquareArrowOutUpRight className='h-3 w-3 ml-1 inline-block' />
                   </a>
                 </p>
+
                 <p className='text-xs text-muted-foreground !mt-2'>
                   <u>Note:</u> Webhook can be created after creating the integration, under Modify Settings.
                 </p>
