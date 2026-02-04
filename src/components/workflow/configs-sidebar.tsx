@@ -457,7 +457,7 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
       onClose();
       toast({
         variant: 'default',
-        title: 'Saved Configuration Successfully',
+        title: 'Configuration Saved Successfully',
         description: '',
         duration: 3000,
       });
