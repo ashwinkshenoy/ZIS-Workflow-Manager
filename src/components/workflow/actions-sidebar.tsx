@@ -28,6 +28,7 @@ type ActionsSidebarProps = {
   onActionUpdate: (actionId: string, updatedAction: ZISResource) => void;
   onActionAdd: (actionId: string, actionType: 'ZIS::Action::Http') => void;
   onActionDelete: (actionId: string) => void;
+  onActionRename: (oldActionId: string, newActionId: string) => boolean;
 };
 
 export function ActionsSidebar({
@@ -38,6 +39,7 @@ export function ActionsSidebar({
   onActionUpdate,
   onActionAdd,
   onActionDelete,
+  onActionRename,
 }: ActionsSidebarProps) {
   const { selectedActionForEdit, setSelectedActionForEdit } = useIntegration();
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
@@ -114,6 +116,24 @@ export function ActionsSidebar({
 
   const handleActionFormChange = (updatedProperties: any) => {
     if (!selectedActionId || !selectedAction) return;
+
+    // Check if the name property changed
+    const oldName = selectedAction.properties?.name || selectedActionId;
+    const newName = updatedProperties.name;
+
+    if (newName && newName !== selectedActionId) {
+      // Attempt to rename the action
+      const renameSuccess = onActionRename(selectedActionId, newName);
+      if (renameSuccess) {
+        // Update the selected action ID to the new name
+        setSelectedActionId(newName);
+        return; // The rename handler will update the workflow
+      } else {
+        // Rename failed, revert the name in the properties
+        updatedProperties.name = selectedActionId;
+      }
+    }
+
     const updatedAction = {
       ...selectedAction,
       properties: updatedProperties,
@@ -207,13 +227,13 @@ export function ActionsSidebar({
             className={cn(
               'absolute left-0 top-0 h-full w-2.5 cursor-col-resize flex items-center justify-center transition-colors z-10',
               'group-hover:bg-border/50',
-              isResizing.current && 'bg-border/80'
+              isResizing.current && 'bg-border/80',
             )}>
             <GripVertical
               className={cn(
                 'h-6 w-4 text-muted-foreground/50 transition-opacity',
                 'opacity-0 group-hover:opacity-100',
-                isResizing.current && 'opacity-100'
+                isResizing.current && 'opacity-100',
               )}
             />
           </div>

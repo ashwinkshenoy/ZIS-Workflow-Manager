@@ -612,6 +612,70 @@ export default function Home() {
     }
   };
 
+  /**
+   * Handle renaming an action and updating all references
+   * @param {String} oldActionId
+   * @param {String} newActionId
+   * @returns {Boolean}
+   */
+  const handleActionRename = (oldActionId: string, newActionId: string): boolean => {
+    if (!workflow || oldActionId === newActionId) return false;
+
+    // Check if new name already exists
+    if (workflow.resources[newActionId]) {
+      toast({
+        variant: 'destructive',
+        title: 'Action name already exists',
+        description: `An action with the name "${newActionId}" already exists.`,
+      });
+      return false;
+    }
+
+    // Create a copy of the workflow
+    const newWorkflow = JSON.parse(JSON.stringify(workflow)) as Workflow;
+
+    // Copy the action to the new key
+    newWorkflow.resources[newActionId] = newWorkflow.resources[oldActionId];
+
+    // Update the name property to match the new key
+    if (newWorkflow.resources[newActionId].properties) {
+      (newWorkflow.resources[newActionId].properties as any).name = newActionId;
+    }
+
+    // Delete the old key
+    delete newWorkflow.resources[oldActionId];
+
+    // Update all references in flows
+    Object.keys(newWorkflow.resources).forEach((key) => {
+      const resource = newWorkflow.resources[key];
+      if (resource.type === 'ZIS::Flow') {
+        const flow = resource as ZISFlow;
+        if (flow.properties?.definition) {
+          const definition = flow.properties.definition as Record<string, any>;
+
+          // Update action references in states
+          Object.keys(definition).forEach((stateKey) => {
+            const state = definition[stateKey];
+            if (state && typeof state === 'object' && 'action' in state) {
+              if (state.action === oldActionId) {
+                state.action = newActionId;
+              }
+            }
+          });
+        }
+      }
+    });
+
+    setWorkflow(newWorkflow);
+
+    // toast({
+    //   title: 'Action Renamed',
+    //   description: `"${oldActionId}" has been renamed to "${newActionId}".`,
+    // });
+
+    return true;
+  };
+
   const confirmNodeDelete = () => {
     if (!workflow || !nodeToDelete || !selectedFlowName) return;
     const nodeId = nodeToDelete;
@@ -741,6 +805,7 @@ export default function Home() {
         onActionUpdate={handleActionUpdate}
         onActionAdd={handleActionAdd}
         onActionDelete={handleActionDelete}
+        onActionRename={handleActionRename}
       />
       <ConfigsSidebar isOpen={isConfigsSidebarOpen} onClose={() => setConfigsSidebarOpen(false)} workflow={workflow} />
       <DeleteNodeDialog

@@ -42,7 +42,7 @@ export function ActionHttpForm({ data, onChange }: ActionHttpFormProps) {
   }, [definition.connectionName]);
 
   // Debounced onChange handlers
-  const debouncedOnChange = useDebouncedCallback(onChange, 300);
+  const debouncedOnChange = useDebouncedCallback(onChange, 500);
 
   const handleNameChange = (value: string) => {
     setLocalName(value);
