@@ -139,11 +139,21 @@ export function ActionNodeForm({ data, actions, onChange }: ActionNodeFormProps)
     onChange({ Catch: newCatchArray });
   };
 
+  /**
+   * Remove a catch block at the specified index
+   * @param {Number} index
+   */
   const handleRemoveCatch = (index: number) => {
     if (!data.Catch) return;
     const newCatch = [...data.Catch];
     newCatch.splice(index, 1);
-    onChange({ Catch: newCatch });
+
+    // If no catch blocks remain, remove the Catch key entirely
+    if (newCatch.length === 0) {
+      onChange({ Catch: undefined as any });
+    } else {
+      onChange({ Catch: newCatch });
+    }
   };
 
   const actionNameKey = data.ActionName?.startsWith('zis:common:')
@@ -256,7 +266,7 @@ export function ActionNodeForm({ data, actions, onChange }: ActionNodeFormProps)
       )}
 
       <div className='grid w-full items-center gap-1.5'>
-        <Label htmlFor='result-path'>ResultPath</Label>
+        <Label htmlFor='result-path'>Result Path</Label>
         <Input
           id='result-path'
           value={data.ResultPath || ''}
@@ -290,7 +300,7 @@ export function ActionNodeForm({ data, actions, onChange }: ActionNodeFormProps)
                 />
               </div>
               <div className='grid w-full items-center gap-1.5'>
-                <Label htmlFor={`catch-result-path-${index}`}>ResultPath</Label>
+                <Label htmlFor={`catch-result-path-${index}`}>Result Path</Label>
                 <Input
                   id={`catch-result-path-${index}`}
                   value={catchBlock.ResultPath || ''}

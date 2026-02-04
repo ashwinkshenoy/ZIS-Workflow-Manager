@@ -1,0 +1,1121 @@
+{
+	"info": {
+		"_postman_id": "56bdee2c-5422-4218-ad9c-74dbfb81c131",
+		"name": "[COLL]-ZIS-<PROD/SDBX>-<CustomerName>-<ProjectName>",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "29074697",
+		"_collection_link": "https://baldurs-gate.postman.co/workspace/ZIS-Boilerplate~a31056b5-98f3-4f6a-a9dd-e2becc603e89/collection/29074697-56bdee2c-5422-4218-ad9c-74dbfb81c131?action=share&source=collection_link&creator=29074697"
+	},
+	"item": [
+		{
+			"name": "Create Integration",
+			"item": [
+				{
+					"name": "1. Create integration",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var data = pm.response.json();",
+									"pm.collectionVariables.set(\"client_id\", data.zendesk_oauth_client.id);",
+									"pm.environment.set(\"client_identifier\", data.zendesk_oauth_client.identifier);",
+									"pm.environment.set(\"client_secret\", data.zendesk_oauth_client.secret);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"description\": \"{{zis_description}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{zis_subdomain}}.zendesk.com/api/services/zis/registry/{{zis_integration_key}}",
+							"protocol": "https",
+							"host": [
+								"{{zis_subdomain}}",
+								"zendesk",
+								"com"
+							],
+							"path": [
+								"api",
+								"services",
+								"zis",
+								"registry",
+								"{{zis_integration_key}}"
+							]
+						},
+						"description": "Register an integration with ZIS"
+					},
+					"response": []
+				},
+				{
+					"name": "2. Create integration Bearer token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var data = pm.response.json();",
+									"pm.environment.set(\"bearer_token\", data.token.full_token);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"token\": {\n        \"client_id\": {{client_id}},\n        \"scopes\": [\"zis:write\",\"zis:read\"]\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{zis_subdomain}}.zendesk.com/api/v2/oauth/tokens.json",
+							"protocol": "https",
+							"host": [
+								"{{zis_subdomain}}",
+								"zendesk",
+								"com"
+							],
+							"path": [
+								"api",
+								"v2",
+								"oauth",
+								"tokens.json"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "ZIS Connections",
+			"item": [
+				{
+					"name": "Zendesk",
+					"item": [
+						{
+							"name": "3. Create Oauth Client",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var data = pm.response.json();",
+											"pm.collectionVariables.set(\"oauth_zendesk_client_uuid\", data.uuid);"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"client_id\": \"{{client_identifier}}\",\n    \"client_secret\": \"{{client_secret}}\",\n    \"auth_url\": \"https://{{zis_subdomain}}.zendesk.com/oauth/authorizations/new\",\n    \"token_url\": \"https://{{zis_subdomain}}.zendesk.com/oauth/tokens\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://{{zis_subdomain}}.zendesk.com/api/services/zis/connections/oauth/clients/{{zis_integration_key}}",
+									"protocol": "https",
+									"host": [
+										"{{zis_subdomain}}",
+										"zendesk",
+										"com"
+									],
+									"path": [
+										"api",
+										"services",
+										"zis",
+										"connections",
+										"oauth",
+										"clients",
+										"{{zis_integration_key}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "4. Start OAuth Flow",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"oauth_client_uuid\": \"{{oauth_zendesk_client_uuid}}\",\n    \"permission_scopes\": \"write read\",\n    \"origin_oauth_redirect_url\": \"\",\n    \"name\": \"zendesk\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://{{zis_subdomain}}.zendesk.com/api/services/zis/connections/oauth/start/{{zis_integration_key}}",
+									"protocol": "https",
+									"host": [
+										"{{zis_subdomain}}",
+										"zendesk",
+										"com"
+									],
+									"path": [
+										"api",
+										"services",
+										"zis",
+										"connections",
+										"oauth",
+										"start",
+										"{{zis_integration_key}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "5. Get Bearer Token",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var data = pm.response.json();",
+											"pm.collectionVariables.set(\"oauth_zendesk_connection_uuid\", data.uuid);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://{{zis_subdomain}}.zendesk.com/api/services/zis/connections/oauth/access_codes/{{zis_integration_key}}?verification_code={{oauth_zendesk_verification_token}}",
+									"protocol": "https",
+									"host": [
+										"{{zis_subdomain}}",
+										"zendesk",
+										"com"
+									],
+									"path": [
+										"api",
+										"services",
+										"zis",
+										"connections",
+										"oauth",
+										"access_codes",
+										"{{zis_integration_key}}"
+									],
+									"query": [
+										{
+											"key": "verification_code",
+											"value": "{{oauth_zendesk_verification_token}}"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Connection Details",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://{{zis_subdomain}}.zendesk.com/api/services/zis/connections/{{zis_integration_key}}?uuid={{oauth_zendesk_client_uuid}}",
+									"protocol": "https",
+									"host": [
+										"{{zis_subdomain}}",
+										"zendesk",
+										"com"
+									],
+									"path": [
+										"api",
+										"services",
+										"zis",
+										"connections",
+										"{{zis_integration_key}}"
+									],
+									"query": [
+										{
+											"key": "uuid",
+											"value": "{{oauth_zendesk_client_uuid}}"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Find Connection - zendesk",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://{{zis_subdomain}}.zendesk.com/api/services/zis/connections/{{zis_integration_key}}?name=zendesk",
+									"protocol": "https",
+									"host": [
+										"{{zis_subdomain}}",
+										"zendesk",
+										"com"
+									],
+									"path": [
+										"api",
+										"services",
+										"zis",
+										"connections",
+										"{{zis_integration_key}}"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "zendesk"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Find Client Oauth",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://{{zis_subdomain}}.zendesk.com/api/services/zis/connections/oauth/clients/{{zis_integration_key}}/{{oauth_zendesk_client_uuid}}",
+									"protocol": "https",
+									"host": [
+										"{{zis_subdomain}}",
+										"zendesk",
+										"com"
+									],
+									"path": [
+										"api",
+										"services",
+										"zis",
+										"connections",
+										"oauth",
+										"clients",
+										"{{zis_integration_key}}",
+										"{{oauth_zendesk_client_uuid}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Customer",
+					"item": [
+						{
+							"name": "3. Create Oauth Client",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var data = pm.response.json();",
+											"pm.collectionVariables.set(\"customer_oauth_client_uuid\", data.uuid);"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"client_id\": \"{{customer_client_identifier}}\",\n    \"client_secret\": \"{{customer_client_secret}}\",\n    \"auth_url\": \"{{customer_auth_url}}\",\n    \"token_url\": \"{{customer_token_url}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://{{zis_subdomain}}.zendesk.com/api/services/zis/connections/oauth/clients/{{zis_integration_key}}",
+									"protocol": "https",
+									"host": [
+										"{{zis_subdomain}}",
+										"zendesk",
+										"com"
+									],
+									"path": [
+										"api",
+										"services",
+										"zis",
+										"connections",
+										"oauth",
+										"clients",
+										"{{zis_integration_key}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "4. Start OAuth Flow",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"oauth_client_uuid\": \"{{customer_oauth_client_uuid}}\",\n    \"permission_scopes\": \"write read\",\n    \"origin_oauth_redirect_url\": \"\",\n    \"name\": \"zendesk\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://{{zis_subdomain}}.zendesk.com/api/services/zis/connections/oauth/start/{{zis_integration_key}}",
+									"protocol": "https",
+									"host": [
+										"{{zis_subdomain}}",
+										"zendesk",
+										"com"
+									],
+									"path": [
+										"api",
+										"services",
+										"zis",
+										"connections",
+										"oauth",
+										"start",
+										"{{zis_integration_key}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "5. Get Bearer Token",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var data = pm.response.json();",
+											"pm.collectionVariables.set(\"customer_oauth_connection_uuid\", data.uuid);"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://{{zis_subdomain}}.zendesk.com/api/services/zis/connections/oauth/access_codes/{{zis_integration_key}}?verification_code={{customer_oauth_verification_token}}",
+									"protocol": "https",
+									"host": [
+										"{{zis_subdomain}}",
+										"zendesk",
+										"com"
+									],
+									"path": [
+										"api",
+										"services",
+										"zis",
+										"connections",
+										"oauth",
+										"access_codes",
+										"{{zis_integration_key}}"
+									],
+									"query": [
+										{
+											"key": "verification_code",
+											"value": "{{customer_oauth_verification_token}}"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "ZIS Config",
+			"item": [
+				{
+					"name": "6. Create ZIS Config",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"scope\": \"{{zis_integration_key}}_settings\",\n    \"config\": {}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{zis_subdomain}}.zendesk.com/api/services/zis/integrations/{{zis_integration_key}}/configs",
+							"protocol": "https",
+							"host": [
+								"{{zis_subdomain}}",
+								"zendesk",
+								"com"
+							],
+							"path": [
+								"api",
+								"services",
+								"zis",
+								"integrations",
+								"{{zis_integration_key}}",
+								"configs"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Config",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{zis_subdomain}}.zendesk.com/api/services/zis/integrations/{{zis_integration_key}}/configs?filter[scope]={{zis_integration_key}}_settings",
+							"protocol": "https",
+							"host": [
+								"{{zis_subdomain}}",
+								"zendesk",
+								"com"
+							],
+							"path": [
+								"api",
+								"services",
+								"zis",
+								"integrations",
+								"{{zis_integration_key}}",
+								"configs"
+							],
+							"query": [
+								{
+									"key": "filter[scope]",
+									"value": "{{zis_integration_key}}_settings"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Patch Config",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"scope\": \"{{zis_integration_key}}_settings\",\n    \"config\": {}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{zis_subdomain}}.zendesk.com/api/services/zis/integrations/{{zis_integration_key}}/configs/{{zis_integration_key}}_settings",
+							"protocol": "https",
+							"host": [
+								"{{zis_subdomain}}",
+								"zendesk",
+								"com"
+							],
+							"path": [
+								"api",
+								"services",
+								"zis",
+								"integrations",
+								"{{zis_integration_key}}",
+								"configs",
+								"{{zis_integration_key}}_settings"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Config",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"scope\": \"{{zis_integration_key}}_settings\",\n    \"config\": {}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{zis_subdomain}}.zendesk.com/api/services/zis/integrations/{{zis_integration_key}}/configs/{{zis_integration_key}}_settings",
+							"protocol": "https",
+							"host": [
+								"{{zis_subdomain}}",
+								"zendesk",
+								"com"
+							],
+							"path": [
+								"api",
+								"services",
+								"zis",
+								"integrations",
+								"{{zis_integration_key}}",
+								"configs",
+								"{{zis_integration_key}}_settings"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Bundle Management",
+			"item": [
+				{
+					"name": "7. Inbound Webhooks (if required)",
+					"item": [
+						{
+							"name": "webhook_<name>",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var data = pm.response.json();",
+											"pm.collectionVariables.set(\"webhook_<name>_id\", data.id);",
+											"pm.collectionVariables.set(\"webhook_<name>_endpoint_path\", data.path);",
+											"pm.collectionVariables.set(\"webhook_<name>_username\", data.username);",
+											"pm.environment.set(\"webhook_<name>_password\", data.password);"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{bearer_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "// Don't forget to change the name in the variables below.\n// Also, change the names in the \"scripts\" tab above.\n\n{\n    \"source_system\": \"{{jobspec_<name>_event_source}}\",\n    \"event_type\": \"{{jobspec_<name>_event_type}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://{{zis_subdomain}}.zendesk.com/api/services/zis/inbound_webhooks/generic/{{zis_integration_key}}",
+									"protocol": "https",
+									"host": [
+										"{{zis_subdomain}}",
+										"zendesk",
+										"com"
+									],
+									"path": [
+										"api",
+										"services",
+										"zis",
+										"inbound_webhooks",
+										"generic",
+										"{{zis_integration_key}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "8. Bundle",
+					"item": [
+						{
+							"name": "Sample",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"description\": \"{{zis_description}}\",\n    \"name\": \"{{zis_integration_key}}\",\n    \"zis_template_version\": \"2019-10-14\",\n    \"resources\": {\n        \"{{jobspec_or_webhook_name}}\": {\n            \"type\": \"ZIS::JobSpec\",\n            \"properties\": {\n                \"name\": \"{{jobspec_or_webhook_name}}\",\n                \"event_source\": \"{{jobspec_or_webhook_event_source}}\",\n                \"event_type\": \"{{jobspec_or_webhook_event_type}}\",\n                \"flow_name\": \"zis:{{zis_integration_key}}:flow:{{jobspec_or_webhook_name}}_flow\"\n            }\n        },\n        \"{{jobspec_or_webhook_name}}_flow\": {\n            \"type\": \"ZIS::Flow\",\n            \"properties\": {\n                \"name\": \"{{jobspec_or_webhook_name}}_flow\",\n                \"definition\": {\n                    \"StartAt\": \"ZIS.LoadConfig\",\n                    \"States\": {\n                        \"ZIS.LoadConfig\": {\n                            \"Comment\": \"Load ZIS setting from config\",\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:action:LoadConfig\",\n                            \"Parameters\": {\n                                \"scope\": \"{{zis_integration_key}}_settings\"\n                            },\n                            \"ResultPath\": \"$.config\",\n                            \"Next\": \"Zendesk.GetTicketData\"\n                        },\n                        \"Zendesk.GetTicketData\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:{{zis_integration_key}}:action:zendesk.get_ticket_object\",\n                            \"Parameters\": {\n                                \"ticketId.$\": \"{{$.input.ticket_event.ticket.id}}\",\n                                \"token.$\": \"{{$.connections.zendesk.access_token}}\"\n                            },\n                            \"ResultPath\": \"$.main_ticket\",\n                            \"Next\": \"Zendesk.GetTicketComments\"\n                        },\n                        \"Zendesk.GetTicketComments\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:{{zis_integration_key}}:action:zendesk.get_ticket_comments\",\n                            \"Parameters\": {\n                                \"ticketId.$\": \"{{$.input.ticket_event.ticket.id}}\",\n                                \"token.$\": \"{{$.connections.zendesk.access_token}}\"\n                            },\n                            \"ResultPath\": \"$.ticket_comments\",\n                            \"Next\": \"Transform.GetLastComment\"\n                        },\n                        \"Transform.GetLastComment\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \".ticket_comments.comments[0]\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.last_comment\",\n                            \"Next\": \"Transform.GetHtmlBodyLength\"\n                        },\n                        \"Transform.GetHtmlBodyLength\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \".last_comment.html_body | length\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.html_comment_length\",\n                            \"Next\": \"Choice.CheckIfCommentLegthIsTooBig\"\n                        },\n                        \"Choice.CheckIfCommentLegthIsTooBig\": {\n                            \"Type\": \"Choice\",\n                            \"Choices\": [\n                                {\n                                    \"Variable\": \"$.html_comment_length\",\n                                    \"NumericGreaterThan\": 63000,\n                                    \"Next\": \"Transform.CreateFullEmailThreadLink\"\n                                }\n                            ],\n                            \"Default\": \"Transform.GetAttachment\"\n                        },\n                        \"Transform.CreateFullEmailThreadLink\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \"\\\"<a href='https://\\\" + .subdomain + \\\".zendesk.com/audits/\\\" + (.last_comment.audit_id | tostring) + \\\"/email.html' target='__blank' style='text-decoration: none'>View Original Email</a><br/>____________________________________________<br/><br/>\\\"\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.full_email_link\",\n                            \"Next\": \"Transform.GetAttachment\"\n                        },\n                        \"Transform.GetAttachment\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \"[.ticket_comments.comments[0] | .attachments[]]\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.ticket_attachments\",\n                            \"Next\": \"Zendesk.GetTicketAudit\"\n                        },\n                        \"Zendesk.GetTicketAudit\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:{{zis_integration_key}}:action:zendesk.get_ticket_audit\",\n                            \"Parameters\": {\n                                \"ticketId.$\": \"{{$.input.ticket_event.ticket.id}}\",\n                                \"token.$\": \"{{$.connections.zendesk.access_token}}\"\n                            },\n                            \"ResultPath\": \"$.ticket_audit\",\n                            \"Next\": \"Transform.GetLastAudit\"\n                        },\n                        \"Transform.GetLastAudit\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \"[.ticket_audit.audits[] | select(any(.; .via.channel == \\\"email\\\")) | .via.source.to.email_ccs + [.via.source.to.address]][0]\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.emails\",\n                            \"Next\": \"Transform.GetChannel\"\n                        },\n                        \"Transform.GetChannel\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \".ticket_audit.audits[] | select(any(.; .via.channel == \\\"email\\\")) | .via.channel\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.channel\",\n                            \"Next\": \"Choice.CheckIfChannelIsEmail\"\n                        },\n                        \"Choice.CheckIfChannelIsEmail\": {\n                            \"Type\": \"Choice\",\n                            \"Choices\": [\n                                {\n                                    \"Variable\": \"$.channel\",\n                                    \"StringEquals\": \"email\",\n                                    \"Next\": \"Transform.RemoveMainRecipient\"\n                                }\n                            ],\n                            \"Default\": \"Done\"\n                        },\n                        \"Transform.RemoveMainRecipient\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \"[.main_ticket.ticket.recipient as $main_email | .emails[] | select(all((. | tostring); (contains($main_email) | not)))]\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.emails\",\n                            \"Next\": \"Transform.GetEmailsLength\"\n                        },\n                        \"Transform.GetEmailsLength\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \".emails | length\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.emails_length\",\n                            \"Next\": \"Choice.CheckIfEmailsArePresent\"\n                        },\n                        \"Choice.CheckIfEmailsArePresent\": {\n                            \"Type\": \"Choice\",\n                            \"Choices\": [\n                                {\n                                    \"Variable\": \"$.emails_length\",\n                                    \"NumericGreaterThan\": 0,\n                                    \"Next\": \"Transform.EmailListToListOfObjects\"\n                                }\n                            ],\n                            \"Default\": \"Done\"\n                        },\n                        \"Transform.EmailListToListOfObjects\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \"[{\\\"email\\\":(.emails[] | . )}]\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.emails_object_list\",\n                            \"Next\": \"Transform.GetIdsFromEmailsList\"\n                        },\n                        \"Transform.GetIdsFromEmailsList\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \"[.emails_object_list[] | select(all((.email | tostring); (contains(\\\"@\\\") | not)))]\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.list_of_ids\",\n                            \"Next\": \"Transform.GetEmailsFromEmailsList\"\n                        },\n                        \"Transform.GetEmailsFromEmailsList\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \"[.emails_object_list[] | select(all((.email | tostring); contains(\\\"@\\\")))]\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.list_of_emails\",\n                            \"Next\": \"Transform.StoreOutsideInformationInsideAuditEmails\"\n                        },\n                        \"Transform.StoreOutsideInformationInsideAuditEmails\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \". as $main | [.list_of_ids[] | (.ticket_audit=$main.ticket_audit) ]\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.list_of_ids\",\n                            \"Next\": \"Map.LoopListOfEmailsCCs\"\n                        },\n                        \"Map.LoopListOfEmailsCCs\": {\n                            \"Type\": \"Map\",\n                            \"ItemsPath\": \"$.list_of_ids\",\n                            \"ResultPath\": \"$.emails_ids_object_response\",\n                            \"Iterator\": {\n                                \"StartAt\": \"Transform.CheckEmailOrId\",\n                                \"States\": {\n                                    \"Transform.CheckEmailOrId\": {\n                                        \"Type\": \"Action\",\n                                        \"ActionName\": \"zis:common:transform:Jq\",\n                                        \"Parameters\": {\n                                            \"expr\": \".email | (. | tostring) | (contains(\\\"@\\\") | not)\",\n                                            \"data.$\": \"$\"\n                                        },\n                                        \"ResultPath\": \"$.email_is_id\",\n                                        \"Next\": \"Choice.CheckIfEmailIsId\"\n                                    },\n                                    \"Choice.CheckIfEmailIsId\": {\n                                        \"Type\": \"Choice\",\n                                        \"Choices\": [\n                                            {\n                                                \"Variable\": \"$.email_is_id\",\n                                                \"BooleanEquals\": true,\n                                                \"Next\": \"Transform.GetAllEmails\"\n                                            }\n                                        ],\n                                        \"Default\": \"DoneLoopListOfEmailsCCs\"\n                                    },\n                                    \"Transform.GetAllEmails\": {\n                                        \"Type\": \"Action\",\n                                        \"ActionName\": \"zis:common:transform:Jq\",\n                                        \"Parameters\": {\n                                            \"expr\": \".ticket_audit.users as $users | .email as $email | $users[] | select(any(.id; contains($email))).email\",\n                                            \"data.$\": \"$\"\n                                        },\n                                        \"ResultPath\": \"$.email\",\n                                        \"Next\": \"DoneLoopListOfEmailsCCs\"\n                                    },\n                                    \"DoneLoopListOfEmailsCCs\": {\n                                        \"Type\": \"Succeed\"\n                                    }\n                                }\n                            },\n                            \"Next\": \"Transform.InitiateResponseVariable\"\n                        },\n                        \"Transform.InitiateResponseVariable\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \"if (.emails_ids_object_response == null) then [] else .emails_ids_object_response end\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.emails_ids_object_response\",\n                            \"Next\": \"Transform.GetAllEmailsFromObjectList\"\n                        },\n                        \"Transform.GetAllEmailsFromObjectList\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \"[.emails_ids_object_response[] | .email] + [.list_of_emails[] | .email]\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.emails\",\n                            \"Next\": \"Zendesk.GetRecipientAddresses\"\n                        },\n                        \"Zendesk.GetRecipientAddresses\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:{{zis_integration_key}}:action:zendesk.get_recipient_addresses\",\n                            \"Parameters\": {\n                                \"token.$\": \"{{$.connections.zendesk.access_token}}\"\n                            },\n                            \"ResultPath\": \"$.recipients\",\n                            \"Next\": \"Transform.CompareCcsWithRecipientAddresses\"\n                        },\n                        \"Choice.CheckIfRecipientNextPageIsPresent\": {\n                            \"Type\": \"Choice\",\n                            \"Choices\": [\n                                {\n                                    \"Variable\": \"$.recipients.next_page\",\n                                    \"IsPresent\": true,\n                                    \"Next\": \"Zendesk.GetNextPageRecipientAddresses\"\n                                }\n                            ],\n                            \"Default\": \"Transform.CompareCcsWithRecipientAddresses\"\n                        },\n                        \"Zendesk.GetNextPageRecipientAddresses\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:{{zis_integration_key}}:action:zendesk.get_next_page_recipient_addresses\",\n                            \"Parameters\": {\n                                \"url.$\": \"{{$.recipients.next_page}}\",\n                                \"token.$\": \"{{$.connections.zendesk.access_token}}\"\n                            },\n                            \"ResultPath\": \"$.next_page_recipients\",\n                            \"Next\": \"Transform.AddNextPageRecipientsToList\"\n                        },\n                        \"Transform.AddNextPageRecipientsToList\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \".recipients.recipient_addresses + .next_page_recipients.recipient_addresses\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.recipients.recipient_addresses\",\n                            \"Next\": \"Transform.GetNextPageRecipients\"\n                        },\n                        \"Transform.GetNextPageRecipients\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \".next_page_recipients.next_page\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.recipients.next_page\",\n                            \"Next\": \"Choice.CheckIfRecipientNextPageIsPresent\"\n                        },\n                        \"Transform.CompareCcsWithRecipientAddresses\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \"[.emails as $emails | .recipients.recipient_addresses[] | . as $item | select(any($emails[]; (contains($item.email))))]\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.recipient_addresses\",\n                            \"Next\": \"Transform.GetRecipientAddressesLength\"\n                        },\n                        \"Transform.GetRecipientAddressesLength\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \".recipient_addresses | length\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.recipient_addresses_length\",\n                            \"Next\": \"Choice.CheckIfRecipientAddressesArePresent\"\n                        },\n                        \"Choice.CheckIfRecipientAddressesArePresent\": {\n                            \"Type\": \"Choice\",\n                            \"Choices\": [\n                                {\n                                    \"Variable\": \"$.recipient_addresses_length\",\n                                    \"NumericGreaterThan\": 0,\n                                    \"Next\": \"Transform.GetAttachmentsLength\"\n                                }\n                            ],\n                            \"Default\": \"Done\"\n                        },\n                        \"Transform.GetAttachmentsLength\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \".last_comment.attachments | length\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.attachments_length\",\n                            \"Next\": \"Choice.CheckIfAttachmentsArePresent\"\n                        },\n                        \"Choice.CheckIfAttachmentsArePresent\": {\n                            \"Type\": \"Choice\",\n                            \"Choices\": [\n                                {\n                                    \"Variable\": \"$.attachments_length\",\n                                    \"NumericGreaterThan\": 0,\n                                    \"Next\": \"Transform.CreateListOfAttachmentLinks\"\n                                }\n                            ],\n                            \"Default\": \"Transform.RemoveAttributesFromMainTicketObject\"\n                        },\n                        \"Transform.CreateListOfAttachmentLinks\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \"[.last_comment.attachments[] | \\\"<a href='\\\" + .content_url + \\\"' target='_blank'>\\\"+ .file_name + \\\"</a>\\\"] | join(\\\"<br>\\\")\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.attachment_links\",\n                            \"Next\": \"Transform.CreatePrivateCommentWithAttachments\"\n                        },\n                        \"Transform.CreatePrivateCommentWithAttachments\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \"\\\"<div>Original ticket ID #\\\"+ (.main_ticket.ticket.id | tostring) + \\\"<br><p>Attachment link(s) from Original Ticket:</p>\\\" + .attachment_links + \\\"<br><p>* The link(s) will expire in 3 days</p></div>\\\"\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.private_comment_html\",\n                            \"Next\": \"Transform.RemoveAttributesFromMainTicketObject\"\n                        },\n                        \"Transform.RemoveAttributesFromMainTicketObject\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \"del(.url) | del(.via.source) | del(.created_at) | del(.updated_at) | del(.raw_subject) | del(.description) | del(.fields) | .via.channel = \\\"mail\\\"\",\n                                \"data.$\": \"$.main_ticket.ticket\"\n                            },\n                            \"ResultPath\": \"$.main_ticket.ticket\",\n                            \"Next\": \"Transform.AddTagToTicketTags\"\n                        },\n                        \"Transform.AddTagToTicketTags\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \".main_ticket.ticket.tags + [\\\"zis_split_ticket\\\"]\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.main_ticket.ticket.tags\",\n                            \"Next\": \"Transform.StoreOutsideInformationInsideRecipientEmails\"\n                        },\n                        \"Transform.StoreOutsideInformationInsideRecipientEmails\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \". as $main | [.recipient_addresses[] | (.access_token=$main.connections.zendesk.access_token) | (.main_ticket=$main.main_ticket) | (.private_comment_html=$main.private_comment_html) | (.full_email_link=$main.full_email_link) ]\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.recipient_addresses\",\n                            \"Next\": \"Map.LoopListOfRecipientEmails\"\n                        },\n                        \"Map.LoopListOfRecipientEmails\": {\n                            \"Type\": \"Map\",\n                            \"ItemsPath\": \"$.recipient_addresses\",\n                            \"ResultPath\": \"$.recipient_addresses_response\",\n                            \"Iterator\": {\n                                \"StartAt\": \"Zendesk.GetTicketComments\",\n                                \"States\": {\n                                    \"Zendesk.GetTicketComments\": {\n                                        \"Type\": \"Action\",\n                                        \"ActionName\": \"zis:{{zis_integration_key}}:action:zendesk.get_ticket_comments\",\n                                        \"Parameters\": {\n                                            \"ticketId.$\": \"{{$.main_ticket.ticket.id}}\",\n                                            \"token.$\": \"{{$.access_token}}\"\n                                        },\n                                        \"ResultPath\": \"$.ticket_comments\",\n                                        \"Next\": \"Transform.GetLastComment\",\n                                        \"Catch\": [\n                                            {\n                                                \"ErrorEquals\": [ \"States.ALL\" ],\n                                                \"ResultPath\": \"$.error_map_response\",\n                                                \"Next\": \"Transform.RemoveDataFromObject\"\n                                            }\n                                        ]\n                                    },\n                                    \"Transform.GetLastComment\": {\n                                        \"Type\": \"Action\",\n                                        \"ActionName\": \"zis:common:transform:Jq\",\n                                        \"Parameters\": {\n                                            \"expr\": \".ticket_comments.comments[0]\",\n                                            \"data.$\": \"$\"\n                                        },\n                                        \"ResultPath\": \"$.last_comment\",\n                                        \"Next\": \"Transform.InsertLinkInsideTheComment\"\n                                    },\n                                    \"Transform.InsertLinkInsideTheComment\": {\n                                        \"Type\": \"Action\",\n                                        \"ActionName\": \"zis:common:transform:Jq\",\n                                        \"Parameters\": {\n                                            \"expr\": \".full_email_link + .last_comment.html_body\",\n                                            \"data.$\": \"$\"\n                                        },\n                                        \"ResultPath\": \"$.last_comment.html_body\",\n                                        \"Next\": \"Transform.IncludeTicketCommentHtml\"\n                                    },\n                                    \"Transform.IncludeTicketCommentHtml\": {\n                                        \"Type\": \"Action\",\n                                        \"ActionName\": \"zis:common:transform:Jq\",\n                                        \"Parameters\": {\n                                            \"expr\": \".last_comment as $comment | .main_ticket.ticket | .comment= { \\\"html_body\\\": $comment.html_body, \\\"author_id\\\": $comment.author_id, \\\"public\\\": $comment.public}\",\n                                            \"data.$\": \"$\"\n                                        },\n                                        \"ResultPath\": \"$.main_ticket.ticket\",\n                                        \"Next\": \"Transform.ChangeTicketRecipient\"\n                                    },\n                                    \"Transform.ChangeTicketRecipient\": {\n                                        \"Type\": \"Action\",\n                                        \"ActionName\": \"zis:common:transform:Jq\",\n                                        \"Parameters\": {\n                                            \"expr\": \".email as $email | .main_ticket.ticket | .recipient=$email\",\n                                            \"data.$\": \"$\"\n                                        },\n                                        \"ResultPath\": \"$.main_ticket.ticket\",\n                                        \"Next\": \"Zendesk.CreateNewTicket\"\n                                    },\n                                    \"Zendesk.CreateNewTicket\": {\n                                        \"Type\": \"Action\",\n                                        \"ActionName\": \"zis:{{zis_integration_key}}:action:zendesk.create_new_ticket\",\n                                        \"Parameters\": {\n                                            \"payload.$\": \"$.main_ticket\",\n                                            \"token.$\": \"{{$.access_token}}\"\n                                        },\n                                        \"ResultPath\": \"$.new_ticket_response\",\n                                        \"Next\": \"Transform.GetNewTicketId\",\n                                        \"Catch\": [\n                                            {\n                                                \"ErrorEquals\": [ \"States.ALL\" ],\n                                                \"ResultPath\": \"$.error_map_response\",\n                                                \"Next\": \"Transform.RemoveDataFromObject\"\n                                            }\n                                        ]\n                                    },\n                                    \"Transform.GetNewTicketId\": {\n                                        \"Type\": \"Action\",\n                                        \"ActionName\": \"zis:common:transform:Jq\",\n                                        \"Parameters\": {\n                                            \"expr\": \".new_ticket_response.ticket.id\",\n                                            \"data.$\": \"$\"\n                                        },\n                                        \"ResultPath\": \"$.new_ticket_id\",\n                                        \"Next\": \"Choice.CheckIfAttachmentsAreNull\"\n                                    },\n                                    \"Choice.CheckIfAttachmentsAreNull\": {\n                                        \"Type\": \"Choice\",\n                                        \"Choices\": [\n                                            {\n                                                \"Variable\": \"$.private_comment_html\",\n                                                \"IsNull\": true,\n                                                \"Next\": \"Transform.CreatePrivateCommentWithParentTicketId\"\n                                            }\n                                        ],\n                                        \"Default\": \"Zendesk.InsertInternalTicketComment\"\n                                    },\n                                    \"Zendesk.InsertInternalTicketComment\": {\n                                        \"Type\": \"Action\",\n                                        \"ActionName\": \"zis:{{zis_integration_key}}:action:zendesk.insert_ticket_comment\",\n                                        \"Parameters\": {\n                                            \"ticketId.$\": \"{{$.new_ticket_response.ticket.id}}\",\n                                            \"comment.$\": \"{{$.private_comment_html}}\",\n                                            \"authorId.$\": \"{{$.main_ticket.ticket.comment.author_id}}\",\n                                            \"token.$\": \"{{$.access_token}}\"\n                                        },\n                                        \"ResultPath\": \"$.new_ticket_response\",\n                                        \"Next\": \"Transform.CreatePrivateCommentWithParentTicketId\",\n                                        \"Catch\": [\n                                            {\n                                                \"ErrorEquals\": [ \"States.ALL\" ],\n                                                \"ResultPath\": \"$.error_map_response\",\n                                                \"Next\": \"Transform.RemoveDataFromObject\"\n                                            }\n                                        ]\n                                    },\n                                    \"Transform.CreatePrivateCommentWithParentTicketId\": {\n                                        \"Type\": \"Action\",\n                                        \"ActionName\": \"zis:common:transform:Jq\",\n                                        \"Parameters\": {\n                                            \"expr\": \"\\\"<div>This ticket was cloned from ticket <a href='/agent/tickets/\\\"+ (.main_ticket.ticket.id | tostring) +\\\"'>#\\\"+ (.main_ticket.ticket.id | tostring) +\\\"</a> due to being received on multiple support addresses. If the ticket is expected to have further updates, please double check the original ticket before taking further action.</div>\\\"\",\n                                            \"data.$\": \"$\"\n                                        },\n                                        \"ResultPath\": \"$.comment_parent_id\",\n                                        \"Next\": \"Zendesk.InsertInternalTicketCommentParentId\"\n                                    },\n                                    \"Zendesk.InsertInternalTicketCommentParentId\": {\n                                        \"Type\": \"Action\",\n                                        \"ActionName\": \"zis:{{zis_integration_key}}:action:zendesk.insert_ticket_comment\",\n                                        \"Parameters\": {\n                                            \"ticketId.$\": \"{{$.new_ticket_response.ticket.id}}\",\n                                            \"comment.$\": \"{{$.comment_parent_id}}\",\n                                            \"authorId.$\": \"{{$.main_ticket.ticket.comment.author_id}}\",\n                                            \"token.$\": \"{{$.access_token}}\"\n                                        },\n                                        \"ResultPath\": \"$.new_ticket_response\",\n                                        \"Next\": \"Transform.RemoveDataFromObject\",\n                                        \"Catch\": [\n                                            {\n                                                \"ErrorEquals\": [ \"States.ALL\" ],\n                                                \"ResultPath\": \"$.error_map_response\",\n                                                \"Next\": \"Transform.RemoveDataFromObject\"\n                                            }\n                                        ]\n                                    },\n                                    \"Transform.RemoveDataFromObject\": {\n                                        \"Type\": \"Action\",\n                                        \"ActionName\": \"zis:common:transform:Jq\",\n                                        \"Parameters\": {\n                                            \"expr\": \".new_ticket_response = null | .main_ticket = null | .last_comment = null | .comment_parent_id = null | .access_token = null | .url = null | .ticket_comments = null\",\n                                            \"data.$\": \"$\"\n                                        },\n                                        \"ResultPath\": \"$\",\n                                        \"Next\": \"Done.LoopListOfRecipientEmails\"\n                                    },\n                                    \"Done.LoopListOfRecipientEmails\": {\n                                        \"Type\": \"Succeed\"\n                                    }\n                                }\n                            },\n                            \"Next\": \"Transform.CheckMapResponseErrors\"\n                        },\n                        \"Transform.CheckMapResponseErrors\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \"([.recipient_addresses_response[] | select(any(.; (.error_map_response == null) | not))][0] // {}).error_map_response\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.api_error_response\",\n                            \"Next\": \"Transform.CheckIfMapResponseErrorsAreNull\"\n                        },\n                        \"Transform.CheckIfMapResponseErrorsAreNull\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \".api_error_response == null\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.api_error_response_is_null\",\n                            \"Next\": \"Choice.CheckIfMapResponseErrorsAreNull\"\n                        },\n                        \"Choice.CheckIfMapResponseErrorsAreNull\": {\n                            \"Type\": \"Choice\",\n                            \"Choices\": [\n                                {\n                                    \"Variable\": \"$.api_error_response_is_null\",\n                                    \"BooleanEquals\": true,\n                                    \"Next\": \"Transform.CreateListOfTicketIdLinks\"\n                                }\n                            ],\n                            \"Default\": \"Fail.GenericError\"\n                        },\n                        \"Transform.CreateListOfTicketIdLinks\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \"[.recipient_addresses_response[] | \\\"<a href='/agent/tickets/\\\"+ (.new_ticket_id | tostring) +\\\"'>#\\\"+ (.new_ticket_id | tostring) +\\\"</a>\\\"] | join(\\\", \\\")\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.ticket_id_links\",\n                            \"Next\": \"Transform.CreatePrivateCommentWithChildrenTicketIds\"\n                        },\n                        \"Transform.CreatePrivateCommentWithChildrenTicketIds\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:transform:Jq\",\n                            \"Parameters\": {\n                                \"expr\": \"\\\"<div>This ticket has been cloned due to being received on multiple support addresses. The cloned ticket(s) is(are) \\\"+ .ticket_id_links +\\\".</div>\\\"\",\n                                \"data.$\": \"$\"\n                            },\n                            \"ResultPath\": \"$.comment_parent_id\",\n                            \"Next\": \"Zendesk.InsertInternalTicketCommentChildrenIds\"\n                        },\n                        \"Wait.WaitToInsertLastComment\" : {\n                            \"Type\" : \"Wait\",\n                            \"Seconds\" : 10,\n                            \"Next\": \"Zendesk.InsertInternalTicketCommentChildrenIds\"\n                        },\n                        \"Zendesk.InsertInternalTicketCommentChildrenIds\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:{{zis_integration_key}}:action:zendesk.insert_ticket_comment\",\n                            \"Parameters\": {\n                                \"ticketId.$\": \"{{$.main_ticket.ticket.id}}\",\n                                \"comment.$\": \"{{$.comment_parent_id}}\",\n                                \"authorId.$\": \"{{$.last_comment.author_id}}\",\n                                \"token.$\": \"{{$.connections.zendesk.access_token}}\"\n                            },\n                            \"ResultPath\": \"$.parent_ticket_response\",\n                            \"Next\": \"Success.EndFlow\",\n                            \"Catch\": [\n                                {\n                                    \"ErrorEquals\": [ \"States.ALL\" ],\n                                    \"ResultPath\": \"$.api_error_response\",\n                                    \"Next\": \"Fail.GenericError\"\n                                }\n                            ]\n                        },\n                        \"Fail.GenericError\": {\n                            \"Type\": \"Fail\",\n                            \"Cause\": \"Something went wrong while cloning ticket #{{$.main_ticket.ticket.id}}.\",\n                            \"Error\": \"{{$.api_error_response}}\"\n                        },\n                        \"Success.EndFlow\": {\n                            \"Type\": \"Succeed\",\n                            \"Message\": \"{{$.recipient_addresses_length}} new tickets were(was) created from the original ticket({{$.main_ticket.ticket.id}})\"\n                        },\n                        \"logStep\": {\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:{{zis_integration_key}}:action:post-to-webhook-site\",\n                            \"Parameters\": {\n                                \"endpoint.$\": \"$.config.webhook_endpoint\",\n                                \"param1.$\": \"$.mapping_objects_response\",\n                                \"param2\": \"final step\"\n                            },\n                            \"Next\": \"Done\"\n                        },\n                        \"Done\": {\n                            \"Type\": \"Succeed\"\n                        }\n                    }\n                }\n            }\n        },\n        \"zendesk.get_ticket_object\": {\n            \"type\": \"ZIS::Action::Http\",\n            \"properties\": {\n                \"name\": \"zendesk.get_ticket_object\",\n                \"definition\": {\n                    \"method\": \"GET\",\n                    \"path\": \"/api/v2/tickets/{{$.ticketId}}.json?include=users\",\n                    \"headers\": [\n                        {\n                            \"key\": \"Content-Type\",\n                            \"value\": \"application/json\"\n                        },\n                        {\n                            \"key\": \"Authorization\",\n                            \"value\": \"Bearer {{$.token}}\"\n                        }\n                    ]\n                }\n            }\n        },\n        \"zendesk.insert_ticket_comment\": {\n            \"type\": \"ZIS::Action::Http\",\n            \"properties\": {\n                \"name\": \"zendesk.insert_ticket_comment\",\n                \"definition\": {\n                    \"method\": \"PUT\",\n                    \"path\": \"/api/v2/tickets/{{$.ticketId}}\",\n                    \"headers\": [\n                        {\n                            \"key\": \"Content-Type\",\n                            \"value\": \"application/json\"\n                        },\n                        {\n                            \"key\": \"Authorization\",\n                            \"value\": \"Bearer {{$.token}}\"\n                        }\n                    ],\n                    \"requestBody\": {\n                        \"ticket\": {\n                            \"comment\": {\n                                \"html_body\": \"{{$.comment}}\",\n                                \"public\": false,\n                                \"author_id\": \"{{$.authorId}}\"\n                            }\n                        }\n                    }\n                }\n            }\n        },\n        \"zendesk.get_ticket_comments\": {\n            \"type\": \"ZIS::Action::Http\",\n            \"properties\": {\n                \"name\": \"zendesk.get_ticket_comments\",\n                \"definition\": {\n                    \"method\": \"GET\",\n                    \"path\": \"/api/v2/tickets/{{$.ticketId}}/comments?sort_by=created_at&sort_order=desc\",\n                    \"headers\": [\n                        {\n                            \"key\": \"Content-Type\",\n                            \"value\": \"application/json\"\n                        },\n                        {\n                            \"key\": \"Authorization\",\n                            \"value\": \"Bearer {{$.token}}\"\n                        }\n                    ]\n                }\n            }\n        },\n        \"zendesk.get_ticket_audit\": {\n            \"type\": \"ZIS::Action::Http\",\n            \"properties\": {\n                \"name\": \"zendesk.get_ticket_audit\",\n                \"definition\": {\n                    \"method\": \"GET\",\n                    \"path\": \"/api/v2/tickets/{{$.ticketId}}/audits.json?include=users&sort_by=created_at&sort_order=desc\",\n                    \"headers\": [\n                        {\n                            \"key\": \"Content-Type\",\n                            \"value\": \"application/json\"\n                        },\n                        {\n                            \"key\": \"Authorization\",\n                            \"value\": \"Bearer {{$.token}}\"\n                        }\n                    ]\n                }\n            }\n        },\n        \"zendesk.get_next_page_recipient_addresses\": {\n            \"type\": \"ZIS::Action::Http\",\n            \"properties\": {\n                \"name\": \"zendesk.get_next_page_recipient_addresses\",\n                \"definition\": {\n                    \"method\": \"GET\",\n                    \"path\": \"{{$.url}}\",\n                    \"headers\": [\n                        {\n                            \"key\": \"Content-Type\",\n                            \"value\": \"application/json\"\n                        },\n                        {\n                            \"key\": \"Authorization\",\n                            \"value\": \"Bearer {{$.token}}\"\n                        }\n                    ]\n                }\n            }\n        },\n        \"zendesk.get_recipient_addresses\": {\n            \"type\": \"ZIS::Action::Http\",\n            \"properties\": {\n                \"name\": \"zendesk.get_recipient_addresses\",\n                \"definition\": {\n                    \"method\": \"GET\",\n                    \"path\": \"/api/v2/recipient_addresses\",\n                    \"headers\": [\n                        {\n                            \"key\": \"Content-Type\",\n                            \"value\": \"application/json\"\n                        },\n                        {\n                            \"key\": \"Authorization\",\n                            \"value\": \"Bearer {{$.token}}\"\n                        }\n                    ]\n                }\n            }\n        },\n        \"zendesk.create_new_ticket\": {\n            \"type\": \"ZIS::Action::Http\",\n            \"properties\": {\n                \"name\": \"zendesk.create_new_ticket\",\n                \"definition\": {\n                    \"method\": \"POST\",\n                    \"path\": \"/api/v2/tickets.json\",\n                    \"headers\": [\n                        {\n                            \"key\": \"Content-Type\",\n                            \"value\": \"application/json\"\n                        },\n                        {\n                            \"key\": \"Authorization\",\n                            \"value\": \"Bearer {{$.token}}\"\n                        }\n                    ],\n                    \"requestBody\": \"{{$.payload}}\"\n                }\n            }\n        },\n        \"post-to-webhook-site\": {\n            \"type\": \"ZIS::Action::Http\",\n            \"properties\": {\n                \"name\": \"post-to-webhook-site\",\n                \"definition\": {\n                    \"method\": \"POST\",\n                    \"url\": \"{{$.endpoint}}\",\n                    \"requestBody\": {\n                        \"logParams\": {\n                            \"parametro1\": \"$.param1\",\n                            \"parametro2\": \"{{$.param2}}\"\n                        }\n                    }\n                }\n            }\n        }\n    }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://{{zis_subdomain}}.zendesk.com/api/services/zis/registry/{{zis_integration_key}}/bundles",
+									"protocol": "https",
+									"host": [
+										"{{zis_subdomain}}",
+										"zendesk",
+										"com"
+									],
+									"path": [
+										"api",
+										"services",
+										"zis",
+										"registry",
+										"{{zis_integration_key}}",
+										"bundles"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Bundle",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "// Note: Remember to change the jobspec name placeholder in here.\n{\n    \"description\": \"{{zis_description}}\",\n    \"name\": \"{{zis_integration_key}}\",\n    \"zis_template_version\": \"2019-10-14\",\n    \"resources\": {\n        //==============================================//\n        //================== JOBSPECS ==================//\n        //==============================================//\n        \"{{jobspec_<name>}}\": {\n            \"type\": \"ZIS::JobSpec\",\n            \"properties\": {\n                \"name\": \"{{jobspec_<name>}}\",\n                \"event_source\": \"{{jobspec_<name>_event_source}}\",\n                \"event_type\": \"{{jobspec_<name>_event_type}}\",\n                \"flow_name\": \"zis:{{zis_integration_key}}:flow:{{jobspec_<name>}}_flow\"\n            }\n        },\n\n        //===============================================//\n        //==================== FLOWS ====================//\n        //===============================================//\n        \"{{jobspec_<name>}}_flow\": {\n            \"type\": \"ZIS::Flow\",\n            \"properties\": {\n                \"name\": \"{{jobspec_<name>}}_flow\",\n                \"definition\": {\n                    \"StartAt\": \"ZIS.LoadConfig\",\n                    \"States\": {\n                        \"ZIS.LoadConfig\": {\n                            \"Comment\": \"Load ZIS settings from config\",\n                            \"Type\": \"Action\",\n                            \"ActionName\": \"zis:common:action:LoadConfig\",\n                            \"Parameters\": {\n                                \"scope\": \"{{zis_integration_key}}_settings\"\n                            },\n                            \"ResultPath\": \"$.config\",\n                            \"Next\": \"...\"\n                        }\n                        // -----> LOG START <----- //\n                        // \"Debugger.PrintLogOne\": {\n                        //     \"Type\": \"Action\",\n                        //     \"ActionName\": \"zis:{{zis_integration_key}}:action:debugger_print_log\",\n                        //     \"Parameters\": {\n                        //         \"endpoint.$\": \"$.config.webhook_endpoint\",\n                        //         \"allData.$\": \"$\",\n                        //         \"logMessage\": \"Debugger One\"\n                        //     },\n                        //     \"Next\": \"...\"\n                        // }\n                        // -----> LOG END <----- //\n                    }\n                }\n            }\n        },\n\n        //=================================================//\n        //==================== ACTIONS ====================//\n        //=================================================//\n        \"debugger_print_log\": {\n            \"type\": \"ZIS::Action::Http\",\n            \"properties\": {\n                \"name\": \"debugger_print_log\",\n                \"definition\": {\n                    \"method\": \"POST\",\n                    \"url\": \"{{$.endpoint}}\",\n                    \"requestBody\": {\n                        \"payload\": \"{{$.allData}}\",\n                        \"message\": \"{{$.logMessage}}\"\n                    }\n                }\n            }\n        }\n    }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://{{zis_subdomain}}.zendesk.com/api/services/zis/registry/{{zis_integration_key}}/bundles",
+									"protocol": "https",
+									"host": [
+										"{{zis_subdomain}}",
+										"zendesk",
+										"com"
+									],
+									"path": [
+										"api",
+										"services",
+										"zis",
+										"registry",
+										"{{zis_integration_key}}",
+										"bundles"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "9. Job Specs",
+					"item": [
+						{
+							"name": "jobspec_<name>",
+							"item": [
+								{
+									"name": "Install",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"url": {
+											"raw": "https://{{zis_subdomain}}.zendesk.com/api/services/zis/registry/job_specs/install?job_spec_name=zis:{{zis_integration_key}}:job_spec:{{jobspec_<name>}}",
+											"protocol": "https",
+											"host": [
+												"{{zis_subdomain}}",
+												"zendesk",
+												"com"
+											],
+											"path": [
+												"api",
+												"services",
+												"zis",
+												"registry",
+												"job_specs",
+												"install"
+											],
+											"query": [
+												{
+													"key": "job_spec_name",
+													"value": "zis:{{zis_integration_key}}:job_spec:{{jobspec_<name>}}"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Uninstall",
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "https://{{zis_subdomain}}.zendesk.com/api/services/zis/registry/job_specs/install?job_spec_name=zis:{{zis_integration_key}}:job_spec:{{jobspec_<name>}}",
+											"protocol": "https",
+											"host": [
+												"{{zis_subdomain}}",
+												"zendesk",
+												"com"
+											],
+											"path": [
+												"api",
+												"services",
+												"zis",
+												"registry",
+												"job_specs",
+												"install"
+											],
+											"query": [
+												{
+													"key": "job_spec_name",
+													"value": "zis:{{zis_integration_key}}:job_spec:{{jobspec_<name>}}"
+												}
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						}
+					]
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "password",
+				"value": "{{token}}",
+				"type": "string"
+			},
+			{
+				"key": "username",
+				"value": "{{email}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "zis_subdomain",
+			"value": "<insert here zendesk subdomain>",
+			"type": "string"
+		},
+		{
+			"key": "email",
+			"value": "<insert here zendesk integration user email (email@domain.com/token)>",
+			"type": "string"
+		},
+		{
+			"key": "zis_integration_key",
+			"value": "<customerName>_<zisIntegrationName>_<environment (sdbx or prod)>",
+			"type": "string"
+		},
+		{
+			"key": "zis_description",
+			"value": "<insert here a brief description of your zis integration>",
+			"type": "string"
+		},
+		{
+			"key": "===== 1. CREATE INTEGRATION =====",
+			"value": "===============",
+			"type": "string",
+			"disabled": true
+		},
+		{
+			"key": "client_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "===== 2. CREATE INTEGRATION  BEARER TOKEN =====",
+			"value": "===============",
+			"type": "string",
+			"disabled": true
+		},
+		{
+			"key": "oauth_zendesk_client_uuid",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "===== 5. START OAUTH FLOW ZENDESK",
+			"value": "",
+			"type": "string",
+			"disabled": true
+		},
+		{
+			"key": "oauth_zendesk_connection_uuid",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "====== JOBSPECS ====== (Each jobspec should have a name)",
+			"value": "===============",
+			"type": "string",
+			"disabled": true
+		},
+		{
+			"key": "jobspec_<name>",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "jobspec_<name>_event_source",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "jobspec_<name>_event_type",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "====== WEBHOOKS ====== (Each webhook should have a name)",
+			"value": "===============",
+			"type": "string",
+			"disabled": true
+		},
+		{
+			"key": "webhook_<name>_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "webhook_<name>_endpoint_path",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "webhook_<name>_username",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "===== CUSTOMER OAUTH ===== (Step 3, 4 and 5)",
+			"value": "===============",
+			"type": "string",
+			"disabled": true
+		},
+		{
+			"key": "customer_auth_url",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "customer_token_url",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "customer_oauth_client_uuid",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "customer_oauth_connection_uuid",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
