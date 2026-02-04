@@ -29,6 +29,9 @@ export function ExportDialog({ isOpen, onClose, workflow }: ExportDialogProps) {
   const { selectedIntegration, integrationConfig } = useIntegration();
   const { toast } = useToast();
 
+  // Check if integration data exists in localStorage
+  const hasIntegrationData = selectedIntegration && localStorage.getItem(selectedIntegration);
+
   if (!workflow) {
     return null;
   }
@@ -266,30 +269,34 @@ export function ExportDialog({ isOpen, onClose, workflow }: ExportDialogProps) {
             <Label htmlFor='json'>ZIS JSON</Label>
             <Textarea id='json' value={jsonString} readOnly className='min-h-[350px] max-h-[60vh] font-mono text-xs' />
           </div>
-          <div className='text-foreground text-xs'>
-            <span className='font-bold'>Note:</span>
-            <ul className='list-disc pl-4'>
-              <li>"Export as Postman collection" is currently in beta.</li>
-              <li>
-                Kindly add the "email" in collection variable and generate "API Token" from zendesk admin and add the
-                token in environment variable token. Needs to be generated when running from postman.
-              </li>
-              <li>
-                Please review the exported Postman collection and environment files to ensure all data is correctly
-                populated.
-              </li>
-              <li>Make sure to test the Postman requests in a safe environment before using them in production.</li>
-            </ul>
-          </div>
+          {hasIntegrationData && (
+            <div className='text-foreground text-xs'>
+              <span className='font-bold'>Note:</span>
+              <ul className='list-disc pl-4'>
+                <li>"Export as Postman collection" is currently in beta.</li>
+                <li>
+                  Kindly add the "email" in collection variable and generate "API Token" from zendesk admin and add the
+                  token in environment variable token. Needs to be generated when running from postman.
+                </li>
+                <li>
+                  Please review the exported Postman collection and environment files to ensure all data is correctly
+                  populated.
+                </li>
+                <li>Make sure to test the Postman requests in a safe environment before using them in production.</li>
+              </ul>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button type='button' variant='ghost' onClick={onClose}>
             Cancel
           </Button>
-          <Button type='button' variant='outline' onClick={handlePostmanExport}>
-            <FileJson className='mr-2 h-4 w-4' />
-            Export as Postman Collection
-          </Button>
+          {hasIntegrationData && (
+            <Button type='button' variant='outline' onClick={handlePostmanExport}>
+              <FileJson className='mr-2 h-4 w-4' />
+              Export as Postman Collection
+            </Button>
+          )}
           <Button type='button' onClick={handleDownload}>
             <Download className='mr-2 h-4 w-4' />
             Export Bundle
