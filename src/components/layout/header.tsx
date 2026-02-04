@@ -14,8 +14,8 @@ import {
   Save,
   Pencil,
   Plus,
-  Info,
   Trash2,
+  Sparkles,
 } from 'lucide-react';
 import type { Integration, Workflow as WorkflowType, Bundle } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -320,7 +320,7 @@ export function AppHeader({
 
               <DropdownMenuSeparator />
 
-              <DropdownMenuItem onClick={resetFlow} className='text-destructive focus:text-destructive'>
+              <DropdownMenuItem onClick={resetFlow} className='text-red-500 focus:text-red-500'>
                 <RefreshCw className='mr-2 h-4 w-4' />
                 <span>Restart Canvas</span>
               </DropdownMenuItem>
@@ -328,7 +328,7 @@ export function AppHeader({
               <DropdownMenuSeparator />
 
               <DropdownMenuItem onClick={() => setAboutOpen(true)}>
-                <Info className='mr-2 h-4 w-4' />
+                <Sparkles className='mr-2 h-4 w-4' />
                 <span>About</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
