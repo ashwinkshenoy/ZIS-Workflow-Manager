@@ -199,24 +199,31 @@ export function ConfigSidebar({
               <SheetHeader className='pr-8 space-y-4'>
                 <SheetTitle className='flex items-center gap-3'>
                   {Icon && <Icon className='h-6 w-6 text-accent-foreground flex-shrink-0' />}
-                  <Input
-                    value={nodeId}
-                    onChange={(e) => setNodeId(e.target.value)}
-                    onBlur={handleNodeIdBlur}
-                    className='text-lg font-semibold tracking-tight p-0 h-auto border-0 focus-visible:ring-0 focus-visible:ring-offset-0 truncate bg-transparent'
-                  />
+                  <div className='text-base font-semibold'>{nodeId}</div>
                 </SheetTitle>
                 <SheetDescription>Configure the properties of this workflow step.</SheetDescription>
               </SheetHeader>
 
               <ScrollArea className='flex-1 -mx-6 px-6'>
-                <div className='space-y-6 py-6'>
+                <div className='space-y-6 pb-6 pt-3'>
                   <div className='grid w-full items-center gap-1.5'>
                     <Label htmlFor='node-type'>Type</Label>
                     <Badge id='node-type' variant='outline' className='w-fit'>
                       {formData.Type}
                     </Badge>
                   </div>
+
+                  {nodeId && (
+                    <div className='grid w-full items-center gap-1.5'>
+                      <Label htmlFor='state-name'>Step Name</Label>
+                      <Input
+                        id='state-name'
+                        value={nodeId}
+                        onChange={(e) => setNodeId(e.target.value)}
+                        onBlur={handleNodeIdBlur}
+                      />
+                    </div>
+                  )}
 
                   <GenericForm data={formData} onChange={handleFormChange} />
 
@@ -226,7 +233,7 @@ export function ConfigSidebar({
 
                   {shouldRenderGenericResultPath && (
                     <div className='grid w-full items-center gap-1.5'>
-                      <Label htmlFor='result-path'>ResultPath</Label>
+                      <Label htmlFor='result-path'>Result Path</Label>
                       <Input
                         id='result-path'
                         value={formData.ResultPath || ''}
