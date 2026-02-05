@@ -272,7 +272,7 @@ export function EditWorkflowDialog({
               Manage the installation status of ZIS Integration Flow:&nbsp;
               <span className='font-semibold text-foreground'>{selectedFlow}</span>.
               <br />
-              Uninstalling will remove the integration from your Zendesk instance.
+              Uninstall will stop the integration from this zendesk instance.
             </p>
             <div className='text-right mt-3'>
               <Button className='mr-2' onClick={installBundle} disabled={isInstalling}>

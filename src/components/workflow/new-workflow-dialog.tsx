@@ -41,7 +41,7 @@ type NewWorkflowDialogProps = {
 };
 
 export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDialogProps) {
-  const { selectedIntegrationObject, setSelectedIntegration, setIsPlayground } = useIntegration();
+  const { selectedIntegrationObject, setSelectedIntegration, setIsPlayground, setIntegrationConfig } = useIntegration();
   const [name, setName] = useState(selectedIntegrationObject?.name || '');
   const [description, setDescription] = useState(selectedIntegrationObject?.description || '');
   const [jobspecName, setJobspecName] = useState('');
@@ -399,6 +399,7 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
     };
     try {
       await ZDClient.createZisConfigApi(payload, name);
+      setIntegrationConfig(payload?.config);
     } catch (err: any) {
       console.error('Failed to save configs:', err);
       toast({

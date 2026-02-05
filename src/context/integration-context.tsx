@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, ReactNode } from 'react';
 import type { Integration } from '@/lib/types';
+import ZDClient from '@/lib/ZDClient';
 
 /**
  * Type definition for the Integration context value
@@ -35,6 +36,8 @@ type IntegrationContextType = {
 
   showWorkflowTour: boolean;
   setShowWorkflowTour: (show: boolean) => void;
+
+  fetchConfigs: (selectedIntegrationObject?: Integration | null) => Promise<Record<string, any> | null>;
 };
 
 /**
@@ -65,6 +68,32 @@ export function IntegrationProvider({ children }: { children: ReactNode }) {
   const [integrationConfig, setIntegrationConfig] = useState<Record<string, any> | null>(null);
   const [showWorkflowTour, setShowWorkflowTour] = useState<boolean>(false);
 
+  /**
+   * Fetches the configurations from the ZIS API for the selected integration
+   * @returns {Promise<Record<string, any> | null>} The configuration object or null if not found
+   */
+  const fetchConfigs = async (
+    selectedIntegrationObject: Integration | null = null,
+  ): Promise<Record<string, any> | null> => {
+    const localSelectedIntegration = selectedIntegrationObject?.name || selectedIntegration;
+    if (!localSelectedIntegration) {
+      console.warn('No integration selected');
+      return null;
+    }
+    try {
+      const response = await ZDClient.getZisConfigApi(localSelectedIntegration);
+      const configData = response?.configs?.[0]?.config;
+      if (configData) {
+        setIntegrationConfig(configData);
+        return configData;
+      }
+      return null;
+    } catch (err: any) {
+      console.error('Failed to fetch configs:', err);
+      throw err;
+    }
+  };
+
   return (
     <IntegrationContext.Provider
       value={{
@@ -94,6 +123,8 @@ export function IntegrationProvider({ children }: { children: ReactNode }) {
 
         showWorkflowTour,
         setShowWorkflowTour,
+
+        fetchConfigs,
       }}>
       {children}
     </IntegrationContext.Provider>

@@ -72,14 +72,24 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
 
   const isResizing = useRef(false);
   const { toast } = useToast();
-  const { selectedIntegration: integrationName, setIntegrationConfig } = useIntegration();
+  const {
+    selectedIntegration: integrationName,
+    setIntegrationConfig,
+    fetchConfigs: fetchConfigsFromContext,
+  } = useIntegration();
 
+  /**
+   * Loads the configuration for the selected integration when the sidebar is opened and integration name is available
+   */
   useEffect(() => {
     if (isOpen && integrationName) {
-      fetchConfigs();
+      loadConfigs();
     }
   }, [isOpen, integrationName]);
 
+  /**
+   * Fetches Zendesk fields when the value type changes to a field type and caches results in sessionStorage
+   */
   useEffect(() => {
     if (newValueType === 'ticket_field') {
       fetchTicketFields();
@@ -150,22 +160,19 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
     fetchFields('organization', () => ZDClient.getOrganizationFields(), setOrganizationFields, setLoadingFields);
 
   /**
-   * Initialises the configurations from the zis api
+   * Loads the configurations from the context and updates local state
    */
-  const fetchConfigs = async () => {
+  const loadConfigs = async () => {
     if (!integrationName) return;
     setIsLoading(true);
     setError(null);
     setConfigs(null);
     try {
-      const response = await ZDClient.getZisConfigApi(integrationName);
-      const configData = response?.configs?.[0]?.config;
+      const configData = await fetchConfigsFromContext();
       if (configData) {
         setConfigs(configData);
         setRawJson(JSON.stringify(configData, null, 2));
         setIsJsonValid(true);
-        // Save to integration context for use in recipe-data and other components
-        setIntegrationConfig(configData);
       }
     } catch (err: any) {
       console.log('Failed to fetch configs:', err);
@@ -489,7 +496,7 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
     };
     try {
       await ZDClient.createZisConfigApi(payload, integrationName);
-      await fetchConfigs();
+      await loadConfigs();
     } catch (err: any) {
       console.error('Failed to save configs:', err);
       toast({

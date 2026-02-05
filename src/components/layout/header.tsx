@@ -80,6 +80,7 @@ export function AppHeader({
     isPlayground,
     setIsPlayground,
     setIntegrationConfig,
+    fetchConfigs,
   } = useIntegration();
 
   const { toast } = useToast();
@@ -103,7 +104,7 @@ export function AppHeader({
       }
     }
     fetchIntegrations();
-  }, [toast]);
+  }, []);
 
   /**
    * Resets the current workflow and selected integration
@@ -150,6 +151,9 @@ export function AppHeader({
       }
 
       onWorkflowUpdate(newWorkflow);
+
+      // Load the configuration for the selected integration from context parallelly
+      fetchConfigs(selectedIntegrationObj);
     } catch (error) {
       if (error instanceof Error) {
         toast({
