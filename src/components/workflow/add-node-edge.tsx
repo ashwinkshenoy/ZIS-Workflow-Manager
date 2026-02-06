@@ -68,7 +68,7 @@ export function AddNodeEdge({
                   'h-6 w-6 rounded-full border-2 bg-background transition-all hover:scale-110 hover:bg-primary hover:text-primary-foreground',
                   isOpen
                     ? 'scale-110 border-primary bg-primary text-primary-foreground'
-                    : 'border-muted-foreground/50 text-muted-foreground/80'
+                    : 'border-muted-foreground/50 text-muted-foreground/80',
                 )}>
                 <Plus className='h-4 w-4' />
               </Button>

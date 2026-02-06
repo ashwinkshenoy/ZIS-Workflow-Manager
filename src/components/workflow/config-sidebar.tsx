@@ -303,23 +303,33 @@ export function ConfigSidebar({
 
                   <Separator />
 
-                  <Accordion type='single' collapsible className='w-full'>
-                    <AccordionItem value='raw-properties'>
-                      <AccordionTrigger>Raw Properties (JSON)</AccordionTrigger>
-                      <AccordionContent>
-                        <Textarea
-                          value={rawJson}
-                          onChange={handleRawJsonChange}
-                          rows={15}
-                          className={`font-mono text-xs ${
-                            !isJsonValid ? 'border-destructive ring-2 ring-destructive ring-offset-2' : ''
-                          }`}
-                          placeholder='Enter valid JSON...'
-                        />
-                        {!isJsonValid && <p className='mt-2 text-sm text-destructive'>Invalid JSON format.</p>}
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
+                  <div className='rounded-lg border bg-muted/40 p-4'>
+                    <Accordion type='single' collapsible className='w-full'>
+                      <AccordionItem value='raw-properties' className='border-none'>
+                        <AccordionTrigger className='hover:no-underline py-2'>
+                          <div className='flex items-center gap-2'>
+                            <span className='text-sm font-medium'>Raw Properties (JSON)</span>
+                            <Badge variant='secondary' className='text-xs'>
+                              Advanced
+                            </Badge>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className='pt-4'>
+                          <Textarea
+                            value={rawJson}
+                            onChange={handleRawJsonChange}
+                            rows={15}
+                            className={cn(
+                              'font-mono text-xs',
+                              !isJsonValid && 'border-destructive ring-2 ring-destructive ring-offset-2',
+                            )}
+                            placeholder='Enter valid JSON...'
+                          />
+                          {!isJsonValid && <p className='mt-2 text-sm text-destructive'>Invalid JSON format.</p>}
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  </div>
                 </div>
               </ScrollArea>
 

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { Workflow } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
+import { Badge } from '../ui/badge';
 import { Cog, GripVertical, Info, Loader2, Plus, Save, Trash2, QrCode, Shapes, Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -747,7 +748,7 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
         </SheetHeader>
 
         <ScrollArea className='flex-1 -mx-6 px-6'>
-          <div className='space-y-6 py-6'>
+          <div className='space-y-6 py-2'>
             {isLoading && (
               <div className='flex items-center justify-center py-20'>
                 <Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
@@ -815,7 +816,7 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
                 <Separator className='!my-8' />
 
                 {/* Add new property section */}
-                <div className='space-y-4 rounded-lg border bg-muted/30 p-4'>
+                <div className='space-y-4 rounded-lg border bg-muted/50 p-4'>
                   <h4 className='font-medium text-base'>Add New Property</h4>
                   <div className='space-y-4'>
                     {/* Type Selector */}
@@ -999,24 +1000,33 @@ export function ConfigsSidebar({ isOpen, onClose, workflow }: ConfigsSidebarProp
 
                 <Separator />
 
-                <Accordion type='single' collapsible className='w-full'>
-                  <AccordionItem value='raw-properties'>
-                    <AccordionTrigger>Raw Properties (JSON)</AccordionTrigger>
-                    <AccordionContent>
-                      <Textarea
-                        value={rawJson}
-                        onChange={handleRawJsonChange}
-                        rows={15}
-                        className={cn(
-                          'font-mono text-xs',
-                          !isJsonValid && 'border-destructive ring-2 ring-destructive ring-offset-2',
-                        )}
-                        placeholder='Enter valid JSON...'
-                      />
-                      {!isJsonValid && <p className='mt-2 text-sm text-destructive'>Invalid JSON format.</p>}
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
+                <div className='rounded-lg border bg-muted/40 p-4'>
+                  <Accordion type='single' collapsible className='w-full'>
+                    <AccordionItem value='raw-properties' className='border-none'>
+                      <AccordionTrigger className='hover:no-underline py-2'>
+                        <div className='flex items-center gap-2'>
+                          <span className='text-sm font-medium'>Raw Properties (JSON)</span>
+                          <Badge variant='secondary' className='text-xs'>
+                            Advanced
+                          </Badge>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className='pt-4'>
+                        <Textarea
+                          value={rawJson}
+                          onChange={handleRawJsonChange}
+                          rows={15}
+                          className={cn(
+                            'font-mono text-xs',
+                            !isJsonValid && 'border-destructive ring-2 ring-destructive ring-offset-2',
+                          )}
+                          placeholder='Enter valid JSON...'
+                        />
+                        {!isJsonValid && <p className='mt-2 text-sm text-destructive'>Invalid JSON format.</p>}
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </div>
               </div>
             )}
           </div>
