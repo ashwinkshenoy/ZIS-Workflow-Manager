@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import type { Workflow, ZISFlow, ZISResource, ZISState } from '@/lib/types';
 import { parseWorkflow, getNextNodeId, createNewWorkflow, createFlowResource } from '@/lib/workflow-utils';
 import { initialWorkflow } from '@/lib/sample-workflow';
@@ -49,10 +49,12 @@ export default function Home() {
     setShowWorkflowTour,
   } = useIntegration();
   const [isDeleteFlowDialogOpen, setDeleteFlowDialogOpen] = useState(false);
+  const [copiedNodeState, setCopiedNodeState] = useState<ZISState | null>(null);
   const { toast } = useToast();
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const handleNodePasteRef = useRef<((targetId: string) => void) | null>(null);
 
   // Check for onboarding status on initial load
   useEffect(() => {
@@ -100,6 +102,8 @@ export default function Home() {
             source: e.source,
             target: e.target,
             onNodeAdd: handleNodeAdd,
+            onNodePaste: handleNodePaste,
+            copiedNodeState: null,
           },
         })),
       );
@@ -300,6 +304,115 @@ export default function Home() {
     setNodeToDelete(nodeId);
   }, []);
 
+  /**
+   * Copy a node's state to the clipboard
+   * Removes node-specific properties and stores the original node ID for naming
+   * @param nodeId - The ID of the node to copy
+   * @param state - The state object of the node to copy
+   */
+  const handleNodeCopy = useCallback(
+    (nodeId: string, state: ZISState) => {
+      // Create a copy of the state and remove any properties that shouldn't be copied
+      const stateCopy = { ...state };
+      // Remove node-specific properties from the copied state
+      delete (stateCopy as any).onNodeDelete;
+      delete (stateCopy as any).onNodeAddBelow;
+      delete (stateCopy as any).onNodeCopy;
+      delete (stateCopy as any).onNodePaste;
+      delete (stateCopy as any).copiedNodeState;
+
+      // Store the original node ID with the copied state
+      (stateCopy as any).originalNodeId = nodeId;
+
+      setCopiedNodeState(stateCopy);
+      toast({
+        title: 'State Copied',
+        description: `State "${nodeId}" has been copied to clipboard.`,
+      });
+    },
+    [toast],
+  );
+
+  /**
+   * Paste a previously copied node after the target node
+   * Creates a new node with a "Copy" suffix and inserts it into the workflow chain
+   * @param targetId - The ID of the node after which to paste
+   */
+  const handleNodePaste = useCallback(
+    (targetId: string) => {
+      if (!copiedNodeState || !selectedFlowName) return;
+
+      setWorkflow((currentWorkflow) => {
+        if (!currentWorkflow) return currentWorkflow;
+
+        const newWorkflow = JSON.parse(JSON.stringify(currentWorkflow)) as Workflow;
+        const flowResource = newWorkflow.resources[selectedFlowName] as ZISFlow | undefined;
+
+        if (!flowResource) return currentWorkflow;
+
+        const states = flowResource.properties.definition.States;
+
+        // Get the original node ID from the copied state
+        const originalNodeId = (copiedNodeState as any).originalNodeId || 'Node';
+
+        // Generate a new unique node ID with "Copy" suffix based on the original node
+        let newNodeId = `${originalNodeId}Copy`;
+        let counter = 1;
+        while (states[newNodeId]) {
+          newNodeId = `${originalNodeId}Copy${counter}`;
+          counter++;
+        }
+
+        // Create the new node with copied state
+        const newState = JSON.parse(JSON.stringify(copiedNodeState)) as ZISState;
+        // Remove the temporary originalNodeId property
+        delete (newState as any).originalNodeId;
+        states[newNodeId] = newState;
+
+        // Insert the new node after the target node
+        const targetNode = states[targetId];
+        if (targetNode) {
+          // If target node has a Next, point the new node to it
+          if (targetNode.Next) {
+            newState.Next = targetNode.Next;
+          } else if (newState.Next) {
+            // If the copied state had a Next, remove it (unless target had one)
+            delete newState.Next;
+          }
+          // Point target to the new node
+          targetNode.Next = newNodeId;
+        }
+
+        toast({
+          title: 'State Pasted',
+          description: `State pasted as "${newNodeId}".`,
+        });
+
+        return newWorkflow;
+      });
+    },
+    [copiedNodeState, selectedFlowName, setWorkflow, toast],
+  );
+
+  // Update ref when handleNodePaste changes
+  useEffect(() => {
+    handleNodePasteRef.current = handleNodePaste;
+  }, [handleNodePaste]);
+
+  // Update edges when copiedNodeState changes to pass it to edge components
+  useEffect(() => {
+    setEdges((currentEdges) =>
+      currentEdges.map((edge) => ({
+        ...edge,
+        data: {
+          ...edge.data,
+          copiedNodeState,
+          onNodePaste: handleNodePasteRef.current,
+        },
+      })),
+    );
+  }, [copiedNodeState, setEdges]);
+
   const { flowName, startAt } = useMemo(() => {
     if (!workflow || !selectedFlowName) return { flowName: null, startAt: null };
     const flowResource = workflow.resources[selectedFlowName] as ZISFlow | undefined;
@@ -320,12 +433,15 @@ export default function Home() {
             ...props.data,
             onNodeDelete: requestNodeDelete,
             onNodeAddBelow: handleNodeAddBelow,
+            onNodeCopy: handleNodeCopy,
+            onNodePaste: handleNodePaste,
+            copiedNodeState,
           }}
           isStartNode={props.id === memoizedStartAt}
         />
       ),
     }),
-    [requestNodeDelete, handleNodeAddBelow, memoizedStartAt],
+    [requestNodeDelete, handleNodeAddBelow, handleNodeCopy, handleNodePaste, copiedNodeState, memoizedStartAt],
   );
 
   const edgeTypes = useMemo(() => ({ 'add-node-edge': AddNodeEdge }), []);

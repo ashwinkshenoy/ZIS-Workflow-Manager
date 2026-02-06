@@ -2,7 +2,7 @@
 import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, useReactFlow } from 'reactflow';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '../ui/button';
-import { Bolt, CheckCircle, GitFork, MoveRight, Plus, Timer, XCircle } from 'lucide-react';
+import { Bolt, CheckCircle, Copy, GitFork, MoveRight, Plus, Timer, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 
@@ -41,6 +41,13 @@ export function AddNodeEdge({
     setOpen(false);
   };
 
+  const handlePaste = () => {
+    if (data?.onNodePaste) {
+      data.onNodePaste(data.source);
+    }
+    setOpen(false);
+  };
+
   return (
     <>
       <BaseEdge path={edgePath} markerEnd={markerEnd} style={style} />
@@ -68,6 +75,12 @@ export function AddNodeEdge({
             </PopoverTrigger>
             <PopoverContent className='w-auto p-1'>
               <div className='flex flex-col gap-1'>
+                {data?.copiedNodeState && (
+                  <Button variant='ghost' size='sm' className='justify-start' onClick={handlePaste}>
+                    <Copy className='mr-2' />
+                    Paste
+                  </Button>
+                )}
                 <Button variant='ghost' size='sm' className='justify-start' onClick={() => handleAdd('Action')}>
                   <Bolt className='mr-2' />
                   Add Action

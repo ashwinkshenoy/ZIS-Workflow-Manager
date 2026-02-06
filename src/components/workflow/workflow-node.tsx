@@ -9,6 +9,7 @@ import {
   MoreHorizontal,
   Network,
   Trash2,
+  Copy,
   Plus,
   Bolt,
   GitFork,
@@ -29,6 +30,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 type WorkflowNodeData = ZISState & {
   onNodeDelete: (id: string) => void;
   onNodeAddBelow: (sourceId: string, nodeType: 'Action' | 'Choice' | 'Pass' | 'Succeed' | 'Fail' | 'Wait') => void;
+  onNodeCopy: (id: string, state: ZISState) => void;
+  onNodePaste: (targetId: string) => void;
+  copiedNodeState: ZISState | null;
 };
 
 // Extend NodeProps to include the custom isStartNode prop
@@ -59,6 +63,18 @@ export function WorkflowNode({ data, selected, id, isStartNode }: CustomNodeProp
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     data.onNodeDelete(id);
+  };
+
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    data.onNodeCopy(id, data);
+    setMenuOpen(false);
+  };
+
+  const handlePaste = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    data.onNodePaste(id);
+    setMenuOpen(false);
   };
 
   const handleAdd = (nodeType: 'Action' | 'Choice' | 'Pass' | 'Succeed' | 'Fail' | 'Wait') => {
@@ -93,7 +109,7 @@ export function WorkflowNode({ data, selected, id, isStartNode }: CustomNodeProp
       <Card
         className={cn(
           'cursor-pointer border-2 shadow-lg transition-all hover:shadow-xl hover:border-primary',
-          selected ? 'border-primary shadow-primary/20' : 'border-border'
+          selected ? 'border-primary shadow-primary/20' : 'border-border',
         )}>
         <CardHeader className='flex-row items-center gap-3 space-y-0 p-4'>
           <div className='flex h-10 w-10 items-center justify-center rounded-md border border-muted-foreground/20 bg-muted/40'>
@@ -115,7 +131,7 @@ export function WorkflowNode({ data, selected, id, isStartNode }: CustomNodeProp
             size='icon'
             className={cn(
               'absolute top-1/2 -right-8 -translate-y-1/2 h-7 w-7 transition-opacity',
-              'data-[state=open]:bg-slate-200'
+              'data-[state=open]:bg-slate-200',
             )}
             onClick={handleMenuClick}>
             <MoreHorizontal className='h-4 w-4 text-muted-foreground' />
@@ -126,6 +142,10 @@ export function WorkflowNode({ data, selected, id, isStartNode }: CustomNodeProp
             <Trash2 className='mr-2 h-4 w-4' />
             Delete
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleCopy}>
+            <Copy className='mr-2 h-4 w-4' />
+            Copy
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -133,7 +153,7 @@ export function WorkflowNode({ data, selected, id, isStartNode }: CustomNodeProp
         <div
           className={cn(
             'absolute -bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1',
-            addMenuOpen ? 'opacity-100' : 'opacity-50 group-hover:opacity-100 transition-opacity'
+            addMenuOpen ? 'opacity-100' : 'opacity-50 group-hover:opacity-100 transition-opacity',
           )}>
           <ArrowDown className='h-4 w-4 text-muted-foreground/80' />
           <Popover open={addMenuOpen} onOpenChange={setAddMenuOpen}>
@@ -144,7 +164,7 @@ export function WorkflowNode({ data, selected, id, isStartNode }: CustomNodeProp
                   'h-6 w-6 rounded-full border-2 bg-background transition-all hover:scale-110 hover:bg-primary hover:text-primary-foreground border-muted-foreground/50 text-muted-foreground/80',
                   addMenuOpen
                     ? 'scale-110 border-primary bg-primary text-primary-foreground'
-                    : 'border-muted-foreground/50 text-muted-foreground/80'
+                    : 'border-muted-foreground/50 text-muted-foreground/80',
                 )}
                 onClick={handleMenuClick}>
                 <Plus className='h-4 w-4' />
@@ -152,6 +172,12 @@ export function WorkflowNode({ data, selected, id, isStartNode }: CustomNodeProp
             </PopoverTrigger>
             <PopoverContent className='w-auto p-1' side='bottom' align='center' onClick={handleMenuClick}>
               <div className='flex flex-col gap-1'>
+                {data.copiedNodeState && (
+                  <Button variant='ghost' size='sm' className='justify-start' onClick={handlePaste}>
+                    <Copy className='mr-2' />
+                    Paste
+                  </Button>
+                )}
                 <Button variant='ghost' size='sm' className='justify-start' onClick={() => handleAdd('Action')}>
                   <Bolt className='mr-2' />
                   Add Action

@@ -9,11 +9,11 @@ import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '../ui/textarea';
 import { Separator } from '../ui/separator';
 import { ScrollArea } from '../ui/scroll-area';
-import { GripVertical, Loader2, Zap, Shapes, SquareArrowOutUpRight, ArrowRight } from 'lucide-react';
+import { GripVertical, Loader2, Zap, Shapes, SquareArrowOutUpRight, ArrowRight, Check, Copy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ZDClient from '@/lib/ZDClient';
 import { createNewWorkflow } from '@/lib/workflow-utils';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import { useIntegration } from '@/context/integration-context';
 import {
   Select,
@@ -54,6 +54,7 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
   const [showInstallationDetails, setShowInstallationDetails] = useState(false);
   const [installationDetails, setInstallationDetails] = useState<any>({});
   const [width, setWidth] = useState(640);
+  const [isCopiedData, setIsCopiedData] = useState<boolean>(false);
   const isResizing = useRef(false);
   const { toast } = useToast();
 
@@ -356,6 +357,20 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
     );
   };
 
+  const handleCopyKey = async () => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(installationDetails, null, 2));
+      setIsCopiedData(true);
+      setTimeout(() => setIsCopiedData(false), 2000);
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Copy failed',
+        description: 'Failed to copy details to clipboard.',
+      });
+    }
+  };
+
   /**
    * Creates a sample workflow bundle after integration installation
    */
@@ -365,9 +380,10 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
     try {
       console.log('Creating sample bundle...');
       const newWorkflowBundle = createNewWorkflow(name, description, jobspecName, eventSource, eventType);
-      // Call createSampleWorkflowBundle from ZDClient
-      createNewConfiguration();
       await ZDClient.saveBundle(name, newWorkflowBundle);
+
+      console.log('Creating sample configuration...');
+      createNewConfiguration();
 
       onCreate({
         name,
@@ -402,12 +418,6 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
       setIntegrationConfig(payload?.config);
     } catch (err: any) {
       console.error('Failed to save configs:', err);
-      toast({
-        variant: 'destructive',
-        title: 'Save Failed',
-        description: err.message || 'An unknown error occurred.',
-        duration: 5000,
-      });
     }
   };
 
@@ -428,7 +438,19 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
         <div className='space-y-4 pb-6'>
           {/* Integration Details */}
           <div className='space-y-2'>
-            <h4 className='font-medium text-foreground flex items-center gap-2'>Integration Details</h4>
+            <div className='flex justify-between'>
+              <h4 className='font-medium text-foreground flex items-center gap-2'>Integration Details</h4>
+              <SimpleTooltip content='Copy integration details'>
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  className='h-6 w-6 text-muted-foreground transition-opacity'
+                  onClick={handleCopyKey}
+                  tabIndex={-1}>
+                  {isCopiedData ? <Check className='h-4 w-4 text-green-600' /> : <Copy className='h-4 w-4' />}
+                </Button>
+              </SimpleTooltip>
+            </div>
             <div className='space-y-3 rounded-md border p-4 bg-muted/30'>
               <div className='grid gap-1'>
                 <Label className='text-xs text-muted-foreground'>Name</Label>
@@ -707,19 +729,14 @@ export function NewWorkflowDialog({ isOpen, onClose, onCreate }: NewWorkflowDial
             </div>
           </div>
           <div className='px-2 py-4 flex justify-between space-x-2 flex-wrap gap-2'>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button type='submit' disabled={loadingIntegration}>
-                    <Shapes className='!h-5 !w-5' />
-                    Create Playground Workflow
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side='bottom'>
-                  <p>No integration will be created. Only for playing around with ZIS locally.</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <SimpleTooltip
+              content='No integration will be created. Only for playing around with ZIS locally.'
+              side='bottom'>
+              <Button type='submit' disabled={loadingIntegration}>
+                <Shapes className='!h-5 !w-5' />
+                Create Playground Workflow
+              </Button>
+            </SimpleTooltip>
 
             <div className='flex space-x-2'>
               <Button type='button' variant='link' onClick={onClose} disabled={loadingIntegration}>
