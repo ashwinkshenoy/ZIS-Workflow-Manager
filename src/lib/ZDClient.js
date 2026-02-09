@@ -198,7 +198,7 @@ const ZDClient = {
    * Get the list of ZIS integrations.
    * @returns {Promise<any>}
    */
-  async getIntegrations() {
+  getIntegrations() {
     return this.request(`/api/services/zis/registry/integrations`, {}, { method: 'GET' });
   },
 
@@ -207,7 +207,7 @@ const ZDClient = {
    * @param {string} integrationKey
    * @returns {Promise<any>}
    */
-  async getZisConfigApi(integrationKey) {
+  getZisConfigApi(integrationKey) {
     return this.request(
       `/api/services/zis/integrations/${integrationKey}/configs?filter[scope]=${integrationKey}_settings`,
       {},
@@ -221,7 +221,7 @@ const ZDClient = {
    * @param {string} integrationKey
    * @returns {Promise<any>}
    */
-  async createZisConfigApi(payload, integrationKey) {
+  createZisConfigApi(payload, integrationKey) {
     return this.request(`/api/services/zis/integrations/${integrationKey}/configs`, JSON.stringify(payload), {
       method: 'POST',
     });
@@ -233,7 +233,7 @@ const ZDClient = {
    * @param {string} integrationKey
    * @returns {Promise<any>}
    */
-  async updateZisConfigApi(payload, integrationKey) {
+  updateZisConfigApi(payload, integrationKey) {
     return this.request(
       `/api/services/zis/integrations/${integrationKey}/configs/${integrationKey}_settings`,
       JSON.stringify(payload),
@@ -246,7 +246,7 @@ const ZDClient = {
    * @param {string} integrationKey
    * @returns {Promise<any>}
    */
-  async getBundleUUID(integrationKey) {
+  getBundleUUID(integrationKey) {
     return this.request(`/api/services/zis/registry/${integrationKey}/bundles`, {}, { method: 'GET' });
   },
 
@@ -256,7 +256,7 @@ const ZDClient = {
    * @param {string} uuid
    * @returns {Promise<any>}
    */
-  async getBundle(integrationKey, uuid) {
+  getBundle(integrationKey, uuid) {
     return this.request(`/api/services/zis/registry/${integrationKey}/bundles/${uuid}`, {}, { method: 'GET' });
   },
 
@@ -265,7 +265,7 @@ const ZDClient = {
    * @param {string} integrationId
    * @returns {Promise<any>}
    */
-  async generateNewIntegrationToken(integrationId) {
+  generateNewIntegrationToken(integrationId) {
     return this.request(
       `/api/v2/oauth/clients/${integrationId}/generate_secret`,
       {},
@@ -281,7 +281,7 @@ const ZDClient = {
    * @param {Object} payload
    * @returns {Promise<any>}
    */
-  async createIntegration(integrationKey, payload) {
+  createIntegration(integrationKey, payload) {
     return this.request(`/api/services/zis/registry/${integrationKey}`, JSON.stringify(payload), { method: 'POST' });
   },
 
@@ -290,7 +290,7 @@ const ZDClient = {
    * @param {Object} payload
    * @returns {Promise<any>}
    */
-  async createBearerToken(payload) {
+  createBearerToken(payload) {
     return this.request(`/api/v2/oauth/tokens.json`, JSON.stringify(payload), { method: 'POST' });
   },
 
@@ -301,7 +301,7 @@ const ZDClient = {
    * @param {Object} payload
    * @returns {Promise<any>}
    */
-  async createOauthClient(integrationKey, token, payload) {
+  createOauthClient(integrationKey, token, payload) {
     return this.request(`/api/services/zis/connections/oauth/clients/${integrationKey}`, JSON.stringify(payload), {
       method: 'POST',
     });
@@ -314,7 +314,7 @@ const ZDClient = {
    * @param {Object} payload
    * @returns {Promise<any>}
    */
-  async startOauthFlow(integrationKey, token, payload) {
+  startOauthFlow(integrationKey, token, payload) {
     return this.request(`/api/services/zis/connections/oauth/start/${integrationKey}`, JSON.stringify(payload), {
       method: 'POST',
     });
@@ -326,7 +326,7 @@ const ZDClient = {
    * @param {Object} payload
    * @returns {Promise<any>}
    */
-  async saveBundle(integrationKey, payload) {
+  saveBundle(integrationKey, payload) {
     return this.request(`/api/services/zis/registry/${integrationKey}/bundles`, JSON.stringify(payload), {
       method: 'POST',
     });
@@ -339,7 +339,7 @@ const ZDClient = {
    * @param {Object} payload
    * @returns {Promise<any>}
    */
-  async installBundle(integrationKey, jobspecName) {
+  installBundle(integrationKey, jobspecName) {
     return this.request(
       `/api/services/zis/registry/job_specs/install?job_spec_name=zis:${integrationKey}:job_spec:${jobspecName}`,
       {},
@@ -355,7 +355,7 @@ const ZDClient = {
    * @param {string} jobspecName
    * @returns {Promise<any>}
    */
-  async uninstallBundle(integrationKey, jobspecName) {
+  uninstallBundle(integrationKey, jobspecName) {
     return this.request(
       `/api/services/zis/registry/job_specs/install?job_spec_name=zis:${integrationKey}:job_spec:${jobspecName}`,
       {},
@@ -372,7 +372,7 @@ const ZDClient = {
    * @param {string} fullToken
    * @returns {Promise<any>}
    */
-  async createInboundWebhook(integrationKey, payload, fullToken) {
+  createInboundWebhook(integrationKey, payload, fullToken) {
     return this.request(`/api/services/zis/inbound_webhooks/generic/${integrationKey}`, JSON.stringify(payload), {
       method: 'POST',
       headers: {
@@ -386,7 +386,7 @@ const ZDClient = {
    * Get ticket fields
    * @returns {Promise<any>}
    */
-  async getTicketFields() {
+  getTicketFields() {
     return this.request(
       `/api/v2/ticket_fields.json`,
       {},
@@ -403,7 +403,7 @@ const ZDClient = {
    * Get user fields
    * @returns {Promise<any>}
    */
-  async getUserFields() {
+  getUserFields() {
     return this.request(
       `/api/v2/user_fields.json`,
       {},
@@ -420,7 +420,7 @@ const ZDClient = {
    * Get organization fields
    * @returns {Promise<any>}
    */
-  async getOrganizationFields() {
+  getOrganizationFields() {
     return this.request(
       `/api/v2/organization_fields.json`,
       {},

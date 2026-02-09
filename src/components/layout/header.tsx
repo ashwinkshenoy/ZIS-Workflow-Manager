@@ -16,12 +16,14 @@ import {
   Plus,
   Trash2,
   Sparkles,
+  Radio,
 } from 'lucide-react';
 import type { Integration, Workflow as WorkflowType, Bundle } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { ImportDialog } from '@/components/workflow/import-dialog';
 import { ExportDialog } from '@/components/workflow/export-dialog';
 import { AboutDialog } from '../about/about-dialog';
+import { TransferPortal } from '@/components/workflow/transfer-portal';
 import { ThemeToggle } from './theme-toggle';
 import {
   DropdownMenu,
@@ -67,6 +69,7 @@ export function AppHeader({
   const [isImportOpen, setImportOpen] = useState(false);
   const [isExportOpen, setExportOpen] = useState(false);
   const [isAboutOpen, setAboutOpen] = useState(false);
+  const [isTransferPortalOpen, setTransferPortalOpen] = useState(false);
   const showFlowSelector = availableFlows.length > 1;
   const [isLoading, setIsLoading] = useState(true);
   const [isSwitching, setIsSwitching] = useState(false);
@@ -331,6 +334,13 @@ export function AppHeader({
 
               <DropdownMenuSeparator />
 
+              <DropdownMenuItem
+                onClick={() => setTransferPortalOpen(true)}
+                disabled={isBundleSaving || !selectedIntegration || !workflow || isPlayground}>
+                <Radio className='mr-2 h-4 w-4' />
+                <span>Transfer Portal</span>
+              </DropdownMenuItem>
+
               <DropdownMenuItem onClick={() => setAboutOpen(true)}>
                 <Sparkles className='mr-2 h-4 w-4' />
                 <span>About</span>
@@ -341,6 +351,12 @@ export function AppHeader({
       </header>
       <ImportDialog isOpen={isImportOpen} onClose={() => setImportOpen(false)} onImport={onWorkflowUpdate} />
       <ExportDialog isOpen={isExportOpen} onClose={() => setExportOpen(false)} workflow={workflow} />
+      <TransferPortal
+        isOpen={isTransferPortalOpen}
+        onClose={() => setTransferPortalOpen(false)}
+        workflow={workflow}
+        onWorkflowUpdate={onWorkflowUpdate}
+      />
       <AboutDialog isOpen={isAboutOpen} onClose={() => setAboutOpen(false)} />
     </>
   );

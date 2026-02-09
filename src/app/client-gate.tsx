@@ -17,7 +17,7 @@ export default function ClientGate({ children }: { children: React.ReactNode }) 
         const client = await ZDClient.init();
         if (client) {
           ZDClient.events.ON_APP_REGISTERED((data: any) => {
-            console.log('App registered:', data);
+            // console.log('App registered:', data);
           });
         }
         const colorScheme = await ZDClient.get('colorScheme');
@@ -45,7 +45,7 @@ export default function ClientGate({ children }: { children: React.ReactNode }) 
       localStorage.setItem('popupPromptDismissed', 'true');
     } else {
       alert(
-        'Popup blocker detected! Please allow popups for this site in your browser settings.\n\nThis app uses popups for OAuth authentication flows.'
+        'Popup blocker detected! Please allow popups for this site in your browser settings.\n\nThis app uses popups for OAuth authentication flows.',
       );
     }
   };
