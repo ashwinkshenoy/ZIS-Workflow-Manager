@@ -78,7 +78,6 @@ export function TransferPortal({ isOpen, onClose, workflow, onWorkflowUpdate }: 
 
     // Listen for messages from other tabs
     const handleMessage = (event: MessageEvent) => {
-      console.log('Received broadcast from another tab:', event.data);
       if (event.data && event.data.type === 'transfer-zis' && event.data.data) {
         const receivedWorkflow = event.data.data.workflow;
         const receivedConfigData = event.data.data.config;
@@ -221,7 +220,6 @@ export function TransferPortal({ isOpen, onClose, workflow, onWorkflowUpdate }: 
         },
       };
       channelRef.current.postMessage(payload);
-      console.log('Broadcast: Transfer ZIS clicked', payload);
       setIsTransferComplete(true);
       setTimeout(() => {
         setIsTransferComplete(false);
