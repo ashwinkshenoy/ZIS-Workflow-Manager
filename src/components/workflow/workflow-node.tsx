@@ -109,7 +109,7 @@ export function WorkflowNode({ data, selected, id, isStartNode }: CustomNodeProp
       <Card
         className={cn(
           'cursor-pointer border-2 shadow-lg transition-all hover:shadow-xl hover:border-primary',
-          selected ? 'border-primary shadow-primary/20' : 'border-border',
+          selected ? 'border-primary shadow-primary/20' : 'border-border'
         )}>
         <CardHeader className='flex-row items-center gap-3 space-y-0 p-4'>
           <div className='flex h-10 w-10 items-center justify-center rounded-md border border-muted-foreground/20 bg-muted/40'>
@@ -131,14 +131,14 @@ export function WorkflowNode({ data, selected, id, isStartNode }: CustomNodeProp
             size='icon'
             className={cn(
               'absolute top-1/2 -right-8 -translate-y-1/2 h-7 w-7 transition-opacity',
-              'data-[state=open]:bg-slate-200',
+              'data-[state=open]:bg-slate-200'
             )}
             onClick={handleMenuClick}>
             <MoreHorizontal className='h-4 w-4 text-muted-foreground' />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent onClick={handleMenuClick} align='end'>
-          <DropdownMenuItem onClick={handleDelete} className='text-destructive focus:text-destructive'>
+          <DropdownMenuItem onClick={handleDelete} className='text-red-500 focus:text-red-500'>
             <Trash2 className='mr-2 h-4 w-4' />
             Delete
           </DropdownMenuItem>
@@ -153,7 +153,7 @@ export function WorkflowNode({ data, selected, id, isStartNode }: CustomNodeProp
         <div
           className={cn(
             'absolute -bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1',
-            addMenuOpen ? 'opacity-100' : 'opacity-50 group-hover:opacity-100 transition-opacity',
+            addMenuOpen ? 'opacity-100' : 'opacity-50 group-hover:opacity-100 transition-opacity'
           )}>
           <ArrowDown className='h-4 w-4 text-muted-foreground/80' />
           <Popover open={addMenuOpen} onOpenChange={setAddMenuOpen}>
@@ -164,7 +164,7 @@ export function WorkflowNode({ data, selected, id, isStartNode }: CustomNodeProp
                   'h-6 w-6 rounded-full border-2 bg-background transition-all hover:scale-110 hover:bg-primary hover:text-primary-foreground border-muted-foreground/50 text-muted-foreground/80',
                   addMenuOpen
                     ? 'scale-110 border-primary bg-primary text-primary-foreground'
-                    : 'border-muted-foreground/50 text-muted-foreground/80',
+                    : 'border-muted-foreground/50 text-muted-foreground/80'
                 )}
                 onClick={handleMenuClick}>
                 <Plus className='h-4 w-4' />

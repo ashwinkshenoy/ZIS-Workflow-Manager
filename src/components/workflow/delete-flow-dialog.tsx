@@ -33,7 +33,7 @@ export function DeleteFlowDialog({ isOpen, onClose, onConfirm, flowId }: DeleteF
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onClose}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} className='bg-destructive hover:bg-destructive/90'>
+          <AlertDialogAction onClick={onConfirm} className='bg-red-500 hover:bg-red-500/90 text-white'>
             Yes, delete flow
           </AlertDialogAction>
         </AlertDialogFooter>

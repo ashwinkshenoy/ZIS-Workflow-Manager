@@ -305,7 +305,7 @@ export function AppHeader({
 
               {availableFlows.length > 1 && workflow && (
                 <>
-                  <DropdownMenuItem onClick={onDeleteFlow} className='text-destructive focus:text-destructive'>
+                  <DropdownMenuItem onClick={onDeleteFlow} className='text-red-500 focus:text-red-500'>
                     <Trash2 className='mr-2 h-4 w-4' />
                     <span>Delete Selected Flow</span>
                   </DropdownMenuItem>

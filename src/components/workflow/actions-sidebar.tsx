@@ -227,13 +227,13 @@ export function ActionsSidebar({
             className={cn(
               'absolute left-0 top-0 h-full w-2.5 cursor-col-resize flex items-center justify-center transition-colors z-10',
               'group-hover:bg-border/50',
-              isResizing.current && 'bg-border/80',
+              isResizing.current && 'bg-border/80'
             )}>
             <GripVertical
               className={cn(
                 'h-6 w-4 text-muted-foreground/50 transition-opacity',
                 'opacity-0 group-hover:opacity-100',
-                isResizing.current && 'opacity-100',
+                isResizing.current && 'opacity-100'
               )}
             />
           </div>
@@ -309,7 +309,7 @@ export function ActionsSidebar({
                             rows={15}
                             className={cn(
                               'font-mono text-xs',
-                              !isJsonValid && 'border-destructive ring-2 ring-destructive ring-offset-2',
+                              !isJsonValid && 'border-destructive ring-2 ring-destructive ring-offset-2'
                             )}
                             placeholder='Enter valid JSON...'
                           />
