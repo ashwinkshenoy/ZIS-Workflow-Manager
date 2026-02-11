@@ -211,7 +211,7 @@ const ZDClient = {
     return this.request(
       `/api/services/zis/integrations/${integrationKey}/configs?filter[scope]=${integrationKey}_settings`,
       {},
-      { method: 'GET' },
+      { method: 'GET' }
     );
   },
 
@@ -237,7 +237,7 @@ const ZDClient = {
     return this.request(
       `/api/services/zis/integrations/${integrationKey}/configs/${integrationKey}_settings`,
       JSON.stringify(payload),
-      { method: 'PUT' },
+      { method: 'PUT' }
     );
   },
 
@@ -271,7 +271,7 @@ const ZDClient = {
       {},
       {
         method: 'PUT',
-      },
+      }
     );
   },
 
@@ -345,8 +345,17 @@ const ZDClient = {
       {},
       {
         method: 'POST',
-      },
+      }
     );
+  },
+
+  /**
+   * List job specs for given integrationKey.
+   * @param {string} integrationKey
+   * @returns {Promise<any>}
+   */
+  listJobSpecs(integrationKey) {
+    return this.request(`/api/services/zis/registry/${integrationKey}/job_specs`, {}, { method: 'GET' });
   },
 
   /**
@@ -361,7 +370,7 @@ const ZDClient = {
       {},
       {
         method: 'DELETE',
-      },
+      }
     );
   },
 
@@ -395,7 +404,7 @@ const ZDClient = {
         headers: {
           'Content-Type': 'application/json',
         },
-      },
+      }
     );
   },
 
@@ -412,7 +421,7 @@ const ZDClient = {
         headers: {
           'Content-Type': 'application/json',
         },
-      },
+      }
     );
   },
 
@@ -429,7 +438,7 @@ const ZDClient = {
         headers: {
           'Content-Type': 'application/json',
         },
-      },
+      }
     );
   },
 };

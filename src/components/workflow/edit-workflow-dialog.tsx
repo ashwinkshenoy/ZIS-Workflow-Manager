@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import ZDClient from '@/lib/ZDClient';
 import { createNewWorkflow, getJobSpecDetails } from '@/lib/workflow-utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 import { useIntegration } from '@/context/integration-context';
 import { WebhookDetails } from './webhook-details';
 import type { Workflow as WorkFlowTypes } from '@/lib/types';
@@ -66,6 +67,8 @@ export function EditWorkflowDialog({
   const [isInstalling, setIsInstalling] = useState(false);
   const [isUninstalling, setIsUninstalling] = useState(false);
   const [width, setWidth] = useState(640);
+  const [jobSpecsLoading, setJobSpecsLoading] = useState(false);
+  const [isInstalled, setIsInstalled] = useState<boolean | null>(null);
 
   const isResizing = useRef(false);
   const { toast } = useToast();
@@ -109,9 +112,16 @@ export function EditWorkflowDialog({
   useEffect(() => {
     if (isOpen) {
       init();
+      fetchJobSpecs();
+    } else {
+      setIsInstalled(null);
+      setJobSpecsLoading(false);
     }
   }, [isOpen]);
 
+  /**
+   * Initializes the workflow details
+   */
   const init = () => {
     if (selectedIntegration && selectedFlow && workflow) {
       const jobspecDetails = getJobSpecDetails(workflow, selectedFlow || '');
@@ -140,6 +150,25 @@ export function EditWorkflowDialog({
           }
         }
       }
+    }
+  };
+
+  /**
+   * Fetches the job specs for the selected integration
+   */
+  const fetchJobSpecs = async () => {
+    if (!selectedIntegration) return;
+    setJobSpecsLoading(true);
+    setIsInstalled(null);
+    try {
+      const response = await ZDClient.listJobSpecs(selectedIntegration);
+      const jobSpecs = response?.job_specs ?? [];
+      const matchingSpec = jobSpecs.find((spec: { name: string }) => spec.name === jobspecName);
+      setIsInstalled(matchingSpec ? matchingSpec.installed : false);
+    } catch {
+      setIsInstalled(false);
+    } finally {
+      setJobSpecsLoading(false);
     }
   };
 
@@ -207,6 +236,7 @@ export function EditWorkflowDialog({
 
     try {
       await ZDClient.installBundle(selectedIntegration, jobspecName);
+      setIsInstalled(true);
       toast({
         title: 'Installed',
         description: `Successfully installed ZIS: "${selectedIntegration}".`,
@@ -233,6 +263,7 @@ export function EditWorkflowDialog({
 
     try {
       await ZDClient.uninstallBundle(selectedIntegration, jobspecName);
+      setIsInstalled(false);
       toast({
         title: 'Uninstalled',
         description: `Successfully uninstalled ZIS: "${selectedIntegration}".`,
@@ -267,33 +298,62 @@ export function EditWorkflowDialog({
         {/* Install/ Uninstall Integration */}
         <div className='space-y-2 mb-5'>
           <div className='rounded-md border border-red-300 p-4'>
-            <h4 className='font-bold text-foreground'>Danger Zone</h4>
-            <p className='text-sm text-muted-foreground mt-1'>
-              Manage the installation status of ZIS Integration Flow:&nbsp;
-              <span className='font-semibold text-foreground'>{selectedFlow}</span>.
-              <br />
-              Uninstall will stop the integration from this zendesk instance.
-            </p>
-            <div className='text-right mt-3'>
-              <Button className='mr-2' onClick={installBundle} disabled={isInstalling}>
-                {isInstalling ? <Loader2 className='h-4 w-4 animate-spin' /> : <Power className='h-4 w-4' />}
-                Install
-              </Button>
-              <Button variant='outline' onClick={uninstallBundle} disabled={isUninstalling}>
-                {isUninstalling ? <Loader2 className='h-4 w-4 animate-spin' /> : <PowerOff className='h-4 w-4' />}
-                Uninstall
-              </Button>
+            <div className='flex items-center justify-between gap-2'>
+              <h4 className='font-bold text-foreground'>Danger Zone</h4>
             </div>
+            {jobSpecsLoading ? (
+              <div className='flex items-center gap-2 py-4 text-muted-foreground'>
+                <Loader2 className='h-4 w-4 animate-spin' />
+                <span className='text-sm'>Loading installation status...</span>
+              </div>
+            ) : (
+              <>
+                <p className='text-sm text-muted-foreground mt-1'>
+                  Manage the installation status of ZIS Integration Flow:&nbsp;
+                  <span className='font-semibold text-foreground'>{selectedFlow}</span>.
+                  <br />
+                  Uninstall will stop the integration from this zendesk instance.
+                </p>
+                <div className='flex items-end justify-between gap-2'>
+                  {/* Installation Status */}
+                  <div>
+                    {isInstalled === true ? (
+                      <Badge variant='success' className='pb-0'>
+                        Active
+                      </Badge>
+                    ) : isInstalled === false ? (
+                      <Badge variant='secondary' className='pb-0'>
+                        Inactive
+                      </Badge>
+                    ) : null}
+                  </div>
+                  {/* Install/ Uninstall Buttons */}
+                  <div className='text-right mt-3'>
+                    <Button className='mr-2' onClick={installBundle} disabled={isInstalling || isInstalled === true}>
+                      {isInstalling ? <Loader2 className='h-4 w-4 animate-spin' /> : <Power className='h-4 w-4' />}
+                      Install
+                    </Button>
+                    <Button
+                      variant='outline'
+                      onClick={uninstallBundle}
+                      disabled={isUninstalling || isInstalled === false}>
+                      {isUninstalling ? <Loader2 className='h-4 w-4 animate-spin' /> : <PowerOff className='h-4 w-4' />}
+                      Uninstall
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className='space-y-6 pb-6 mt-3'>
             <div className='space-y-2'>
-              <h4 className='font-medium text-foreground'>JobSpec Details</h4>
+              <h4 className='font-medium text-foreground'>Job Spec Details</h4>
               <div className='space-y-4 rounded-md border p-4 bg-muted/30'>
                 <div className='grid w-full items-center gap-1.5'>
-                  <Label htmlFor='jobspec-name'>JobSpec Name</Label>
+                  <Label htmlFor='jobspec-name'>Job Spec Name</Label>
                   <Input
                     id='jobspec-name'
                     value={jobspecName}
@@ -307,7 +367,7 @@ export function EditWorkflowDialog({
                   <Select
                     value={eventCategory}
                     onValueChange={(
-                      value: 'ticket' | 'user' | 'organization' | 'customobject' | 'activity' | 'custom',
+                      value: 'ticket' | 'user' | 'organization' | 'customobject' | 'activity' | 'custom'
                     ) => {
                       setEventCategory(value);
                       setEventType(''); // Reset event type when category changes
@@ -353,12 +413,12 @@ export function EditWorkflowDialog({
                               {eventCategory === 'ticket'
                                 ? 'Ticket Events'
                                 : eventCategory === 'user'
-                                  ? 'User Events'
-                                  : eventCategory === 'organization'
-                                    ? 'Organization Events'
-                                    : eventCategory === 'customobject'
-                                      ? 'Custom Object Events'
-                                      : 'Activity Events'}
+                                ? 'User Events'
+                                : eventCategory === 'organization'
+                                ? 'Organization Events'
+                                : eventCategory === 'customobject'
+                                ? 'Custom Object Events'
+                                : 'Activity Events'}
                             </u>
                           </SelectLabel>
                           {EVENT_TYPES[eventCategory].map((event) => (
@@ -396,16 +456,16 @@ export function EditWorkflowDialog({
                     <SquareArrowOutUpRight className='h-3 w-3 ml-1 inline-block' />
                   </a>
                 </p>
-
-                {/* Webhook Details */}
-                <WebhookDetails
-                  selectedIntegration={selectedIntegration}
-                  workflow={workflow}
-                  eventSource={eventSource}
-                  eventType={eventType}
-                />
               </div>
             </div>
+
+            {/* Webhook Details */}
+            <WebhookDetails
+              selectedIntegration={selectedIntegration}
+              workflow={workflow}
+              eventSource={eventSource}
+              eventType={eventType}
+            />
           </div>
           <div className='px-2 py-4 flex justify-end space-x-2 flex-wrap gap-2'>
             <div className='flex space-x-2'>
@@ -431,13 +491,13 @@ export function EditWorkflowDialog({
           className={cn(
             'absolute left-0 top-0 h-full w-2.5 cursor-col-resize flex items-center justify-center transition-colors z-10',
             'group-hover:bg-border/50',
-            isResizing.current && 'bg-border/80',
+            isResizing.current && 'bg-border/80'
           )}>
           <GripVertical
             className={cn(
               'h-6 w-4 text-muted-foreground/50 transition-opacity',
               'opacity-0 group-hover:opacity-100',
-              isResizing.current && 'opacity-100',
+              isResizing.current && 'opacity-100'
             )}
           />
         </div>
