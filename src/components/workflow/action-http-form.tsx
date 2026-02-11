@@ -3,6 +3,7 @@
 import { Fragment, useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import type { ZISActionHttp } from '@/lib/types';
 import { Button } from '../ui/button';
@@ -18,6 +19,7 @@ type ActionHttpFormProps = {
 
 type EndpointType = 'path' | 'url';
 type BodyType = 'json' | 'path';
+const httpMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 
 export function ActionHttpForm({ data, onChange }: ActionHttpFormProps) {
   const definition = data.definition || {};
@@ -259,13 +261,24 @@ export function ActionHttpForm({ data, onChange }: ActionHttpFormProps) {
 
       <div className='p-4 rounded-md border bg-muted/50 space-y-4'>
         <div className='grid w-full items-center gap-1.5'>
-          <Label htmlFor='def-method'>Method</Label>
-          <Input id='def-method' value={localMethod} onChange={(e) => handleMethodChange(e.target.value)} />
+          <Label htmlFor='def-method'>Request Method</Label>
+          <Select value={localMethod} onValueChange={handleMethodChange}>
+            <SelectTrigger id='def-method'>
+              <SelectValue placeholder='Select method' />
+            </SelectTrigger>
+            <SelectContent>
+              {httpMethods.map((method) => (
+                <SelectItem key={method} value={method}>
+                  {method}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className='space-y-2'>
           <div className='flex items-center justify-between'>
-            <Label>Endpoint</Label>
+            <Label>Endpoint URL/Path</Label>
             <RadioGroup
               value={endpointType}
               onValueChange={(v) => handleEndpointTypeChange(v as EndpointType)}
@@ -341,7 +354,9 @@ export function ActionHttpForm({ data, onChange }: ActionHttpFormProps) {
             value={localBodyValue}
             onChange={(e) => handleLocalBodyChange(e.target.value)}
             rows={5}
-            className={`font-mono text-xs ${jsonError && bodyType === 'json' ? 'border-destructive ring-2 ring-destructive ring-offset-2' : ''}`}
+            className={`font-mono text-xs ${
+              jsonError && bodyType === 'json' ? 'border-destructive ring-2 ring-destructive ring-offset-2' : ''
+            }`}
             placeholder={bodyType === 'path' ? 'e.g., $.input_data' : '{ "key": "value" }'}
           />
           {jsonError && bodyType === 'json' && <p className='text-sm text-destructive mt-1'>{jsonError}</p>}

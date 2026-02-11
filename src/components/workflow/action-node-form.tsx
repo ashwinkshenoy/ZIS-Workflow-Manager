@@ -206,7 +206,7 @@ export function ActionNodeForm({ data, actions, onChange }: ActionNodeFormProps)
         <>
           <Separator />
           <div className='space-y-2'>
-            <h4 className='font-medium text-base'>Parameters</h4>
+            <h4 className='font-medium text-base'>Variables</h4>
             <div className='space-y-3 rounded-md border bg-muted/50 p-4'>
               {data.Parameters &&
                 Object.keys(data.Parameters).map((paramKey, index) => (
