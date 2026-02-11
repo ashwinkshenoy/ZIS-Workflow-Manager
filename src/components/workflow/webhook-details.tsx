@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useIntegration } from '@/context/integration-context';
 import ZDClient from '@/lib/ZDClient';
 
@@ -74,7 +75,7 @@ export function WebhookDetails({ selectedIntegration, workflow, eventSource, eve
     try {
       // Generate new token
       const generateNewIntegrationTokenResponse = await ZDClient.generateNewIntegrationToken(
-        selectedIntegrationObject.zendesk_oauth_client.id,
+        selectedIntegrationObject.zendesk_oauth_client.id
       );
 
       const createIntegrationResponse = {
@@ -178,76 +179,83 @@ export function WebhookDetails({ selectedIntegration, workflow, eventSource, eve
   };
 
   return (
-    <>
-      <div className='rounded border p-4 bg-muted/80'>
-        {!hasToken ? (
-          <>
-            <p className='text-xs text-muted-foreground mb-2 border-l-4 pl-3 border-yellow-500 bg-yellow-500/10 rounded-r-md py-3'>
-              <span className='font-semibold block text-foreground'>TOKEN REQUIRED:</span>A bearer token needs to be
-              regenerated to create webhook details within the app. Please regenerate a token first.
-            </p>
-            <Button type='button' variant='outline' disabled={loadingToken} onClick={generateToken}>
-              {loadingToken && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-              Regenerate Token & Create Webhook
-            </Button>
-          </>
-        ) : (
-          <>
-            {!showWebhookDetails && (
+    <Accordion type='single' collapsible className='w-full'>
+      <AccordionItem value='webhook' className='border rounded-md px-4 py-2 bg-muted/30'>
+        <AccordionTrigger className='py-2 hover:no-underline text-sm font-medium'>
+          <h4 className='text-foreground'>Webhook Details</h4>
+        </AccordionTrigger>
+        <AccordionContent className='pb-2'>
+          <div className=''>
+            {!hasToken ? (
               <>
-                <p className='text-xs text-muted-foreground mb-2 border-l-4 pl-3 border-indigo-500 bg-indigo-500/10 rounded-r-md  py-3'>
-                  <span className='font-semibold block text-foreground'>NOTE:</span>
-                  Please ensure the <span className='underline'>Event Source</span> and{' '}
-                  <span className='underline'>Event Type</span> above is correct as this will be used to trigger the
-                  JobSpec via webhook.
+                <p className='text-xs text-muted-foreground mb-2 border-l-4 pl-3 border-yellow-500 bg-yellow-500/10 rounded-r-md py-3'>
+                  <span className='font-semibold block text-foreground'>TOKEN REQUIRED:</span> A bearer token needs to
+                  be regenerated to create webhook details within the app. Please regenerate a token first.
                 </p>
-                <Button
-                  type='button'
-                  variant='outline'
-                  disabled={loadingWebhookDetails}
-                  onClick={createNewInboundWebhook}>
-                  {loadingWebhookDetails && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-                  Create Inbound Webhook
+                <Button type='button' variant='outline' disabled={loadingToken} onClick={generateToken}>
+                  {loadingToken && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+                  Regenerate Token & Create Webhook
                 </Button>
               </>
-            )}
-
-            {showWebhookDetails && (
+            ) : (
               <>
-                <p className='text-xs text-muted-foreground mb-3 border-l-4 pl-3 border-orange-500 bg-orange-500/10 rounded-r-md  py-3'>
-                  <span className='font-semibold block text-foreground'>NOTE:</span>
-                  Please store the webhook details securely as these details will NOT be shown again.
-                </p>
-                <div className='grid w-full items-center gap-3'>
-                  <div className='grid w-full items-center gap-1.5'>
-                    <Label htmlFor='webhook-path'>Webhook URL</Label>
-                    <Input
-                      id='webhook-path'
-                      defaultValue={
-                        webhookDetails?.path
-                          ? `https://${ZDClient.app.subdomain}.zendesk.com${webhookDetails.path}`
-                          : ''
-                      }
-                    />
-                  </div>
-                  <div className='grid w-full items-center gap-1.5'>
-                    <Label htmlFor='webhook-username'>User Name</Label>
-                    <Input id='webhook-username' defaultValue={webhookDetails?.username || ''} />
-                  </div>
-                  <div className='grid w-full items-center gap-1.5'>
-                    <Label htmlFor='webhook-password'>Password</Label>
-                    <Input id='webhook-password' defaultValue={webhookDetails?.password || ''} />
-                  </div>
-                  <div className='grid w-full items-center gap-1.5'>
-                    <Label htmlFor='webhook-uuid'>UUID</Label>
-                    <Input id='webhook-uuid' defaultValue={webhookDetails?.uuid || ''} />
-                  </div>
-                </div>
+                {!showWebhookDetails && (
+                  <>
+                    <p className='text-xs text-muted-foreground mb-2 border-l-4 pl-3 border-indigo-500 bg-indigo-500/10 rounded-r-md  py-3'>
+                      <span className='font-semibold block text-foreground'>NOTE:</span>
+                      Please ensure the <span className='underline'>Event Source</span> and{' '}
+                      <span className='underline'>Event Type</span> above is correct as this will be used to trigger the
+                      JobSpec via webhook.
+                    </p>
+                    <Button
+                      type='button'
+                      variant='outline'
+                      disabled={loadingWebhookDetails}
+                      onClick={createNewInboundWebhook}>
+                      {loadingWebhookDetails && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+                      Create Inbound Webhook
+                    </Button>
+                  </>
+                )}
+
+                {showWebhookDetails && (
+                  <>
+                    <p className='text-xs text-muted-foreground mb-3 border-l-4 pl-3 border-orange-500 bg-orange-500/10 rounded-r-md  py-3'>
+                      <span className='font-semibold block text-foreground'>NOTE:</span>
+                      Please store the webhook details securely as these details will NOT be shown again.
+                    </p>
+                    <div className='grid w-full items-center gap-3'>
+                      <div className='grid w-full items-center gap-1.5'>
+                        <Label htmlFor='webhook-path'>Webhook URL</Label>
+                        <Input
+                          id='webhook-path'
+                          defaultValue={
+                            webhookDetails?.path
+                              ? `https://${ZDClient.app.subdomain}.zendesk.com${webhookDetails.path}`
+                              : ''
+                          }
+                        />
+                      </div>
+                      <div className='grid w-full items-center gap-1.5'>
+                        <Label htmlFor='webhook-username'>User Name</Label>
+                        <Input id='webhook-username' defaultValue={webhookDetails?.username || ''} />
+                      </div>
+                      <div className='grid w-full items-center gap-1.5'>
+                        <Label htmlFor='webhook-password'>Password</Label>
+                        <Input id='webhook-password' defaultValue={webhookDetails?.password || ''} />
+                      </div>
+                      <div className='grid w-full items-center gap-1.5'>
+                        <Label htmlFor='webhook-uuid'>UUID</Label>
+                        <Input id='webhook-uuid' defaultValue={webhookDetails?.uuid || ''} />
+                      </div>
+                    </div>
+                  </>
+                )}
               </>
             )}
-          </>
-        )}
-      </div>
-    </>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   );
 }
