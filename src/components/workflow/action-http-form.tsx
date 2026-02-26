@@ -25,7 +25,12 @@ type EndpointType = 'path' | 'url';
 type BodyType = 'json' | 'path';
 const httpMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 
-export function ActionHttpForm({ data, onChange, hideNameField = false, showDefinitionHeader = true }: ActionHttpFormProps) {
+export function ActionHttpForm({
+  data,
+  onChange,
+  hideNameField = false,
+  showDefinitionHeader = true,
+}: ActionHttpFormProps) {
   const definition = data.definition || {};
 
   // Local state for debounced inputs
@@ -266,7 +271,12 @@ export function ActionHttpForm({ data, onChange, hideNameField = false, showDefi
 
       {showDefinitionHeader && <h4 className='font-medium text-base pt-2'>Definition</h4>}
 
-      <div className='p-4 rounded-md border bg-muted/50 space-y-4'>
+      <div
+        className={
+          showDefinitionHeader
+            ? 'p-4 rounded-md border bg-muted/50 space-y-4'
+            : 'p-4 rounded-md border bg-white space-y-4'
+        }>
         <div className='grid w-full items-center gap-1.5'>
           <Label htmlFor='def-method'>Request Method</Label>
           <Select value={localMethod} onValueChange={handleMethodChange}>
