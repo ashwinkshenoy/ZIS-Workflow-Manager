@@ -3,13 +3,14 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ZISState, type ZISResource } from '@/lib/types';
-import { Fragment, useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { Button } from '../ui/button';
-import { Plus, Trash2, Pencil } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useIntegration } from '@/context/integration-context';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
 import { PlaceholderPicker } from './placeholder-picker';
 import { extractPlaceholders } from '@/lib/placeholder-utils';
 
@@ -17,10 +18,20 @@ type ActionNodeFormProps = {
   data: ZISState;
   actions: Record<string, ZISResource>;
   onChange: (updatedData: Partial<ZISState>) => void;
+  /** When true, the action definition is shown inline - hide Edit Action button */
+  showActionDefinitionInline?: boolean;
+  /** Renders the action definition accordion. */
+  renderActionDefinition?: () => ReactNode;
 };
 
-export function ActionNodeForm({ data, actions, onChange }: ActionNodeFormProps) {
-  const { selectedIntegration, setActionsSidebarOpen, setSelectedActionForEdit } = useIntegration();
+export function ActionNodeForm({
+  data,
+  actions,
+  onChange,
+  showActionDefinitionInline = false,
+  renderActionDefinition,
+}: ActionNodeFormProps) {
+  const { selectedIntegration, setActionsSidebarOpen } = useIntegration();
 
   // Extract placeholders from the selected action's definition
   const availablePlaceholders = useMemo(() => {
@@ -160,31 +171,15 @@ export function ActionNodeForm({ data, actions, onChange }: ActionNodeFormProps)
     ? data.ActionName
     : data.ActionName?.split(':').pop() || '';
 
-  const handleEditActionClick = () => {
-    if (actionNameKey && !actionNameKey.startsWith('zis:common:')) {
-      setSelectedActionForEdit(actionNameKey);
-      setActionsSidebarOpen(true);
-    }
-  };
-
-  const canEditAction = actionNameKey && !actionNameKey.startsWith('zis:common:') && actions[actionNameKey];
-
   return (
     <div className='space-y-4'>
       <div className='grid w-full gap-1.5'>
         <div className='flex items-center justify-between'>
           <Label htmlFor='action-name'>Action Name</Label>
-          {canEditAction ? (
-            <Button variant='outline' size='sm' onClick={handleEditActionClick} className='text-xs'>
-              <Pencil className='h-3 w-3' />
-              Edit Action
-            </Button>
-          ) : (
-            <Button variant='outline' size='sm' onClick={() => setActionsSidebarOpen(true)} className='text-xs'>
-              <Plus className='h-3 w-3' />
-              Add Action
-            </Button>
-          )}
+          <Button variant='outline' size='sm' onClick={() => setActionsSidebarOpen(true)} className='text-xs'>
+            <Plus className='h-3 w-3' />
+            Add Action
+          </Button>
         </div>
         <Select value={actionNameKey} onValueChange={handleActionNameChange}>
           <SelectTrigger id='action-name'>
@@ -205,65 +200,79 @@ export function ActionNodeForm({ data, actions, onChange }: ActionNodeFormProps)
       {'Parameters' in data && (
         <>
           <Separator />
-          <div className='space-y-2'>
-            <h4 className='font-medium text-base'>Variables</h4>
-            <div className='space-y-3 rounded-md border bg-muted/50 p-4'>
-              {data.Parameters &&
-                Object.keys(data.Parameters).map((paramKey, index) => (
-                  <div key={index} className='relative space-y-2 rounded-lg border bg-background p-3'>
-                    <Button
-                      variant='ghost'
-                      size='icon'
-                      className='absolute top-1 right-1 h-7 w-7'
-                      onClick={() => handleRemoveParameter(paramKey)}
-                      title='Remove Parameter'>
-                      <Trash2 className='h-4 w-4 text-muted-foreground' />
+          <div className='rounded-lg border bg-muted/40 p-4'>
+            <Accordion type='single' collapsible defaultValue='variables' className='w-full'>
+              <AccordionItem value='variables' className='border-none'>
+                <AccordionTrigger className='hover:no-underline py-2'>
+                  <span className='text-base font-medium'>
+                    {data.ActionName?.startsWith('zis:common:') || !data.ActionName
+                      ? 'Action Variables'
+                      : 'API / Action Variables'}
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className='pt-3'>
+                  <div className='space-y-3'>
+                    {data.Parameters &&
+                      Object.keys(data.Parameters).map((paramKey, index) => (
+                        <div key={index} className='relative space-y-2 rounded-lg border bg-background p-3'>
+                          <Button
+                            variant='ghost'
+                            size='icon'
+                            className='absolute top-1 right-1 h-7 w-7'
+                            onClick={() => handleRemoveParameter(paramKey)}
+                            title='Remove Parameter'>
+                            <Trash2 className='h-4 w-4 text-muted-foreground' />
+                          </Button>
+                          <div className='grid w-full items-center gap-1.5'>
+                            <Label htmlFor={`param-key-${index}`}>
+                              Key
+                              <span className='text-xs text-muted-foreground ml-1'>[e.g: variable.$]</span>
+                            </Label>
+                            <div className='flex items-center gap-1'>
+                              <Input
+                                id={`param-key-${index}`}
+                                placeholder='Key'
+                                value={paramKey}
+                                onChange={(e) => handleParameterChange(index, 'key', e.target.value)}
+                                className='font-mono text-xs flex-1'
+                              />
+                              <PlaceholderPicker
+                                placeholders={availablePlaceholders}
+                                onSelect={(placeholder) => handleParameterChange(index, 'key', paramKey + placeholder)}
+                                buttonSize='sm'
+                                disabled={availablePlaceholders.length === 0}
+                              />
+                            </div>
+                          </div>
+                          <div className='grid w-full items-center gap-1.5'>
+                            <Label htmlFor={`param-value-${index}`}>Value</Label>
+                            <Textarea
+                              id={`param-value-${index}`}
+                              placeholder='Value'
+                              value={
+                                typeof data.Parameters[paramKey] === 'string'
+                                  ? data.Parameters[paramKey]
+                                  : JSON.stringify(data.Parameters[paramKey], null, 2)
+                              }
+                              onChange={(e) => handleParameterChange(index, 'value', e.target.value)}
+                              className='font-mono text-xs'
+                              rows={1}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    <Button variant='default' size='sm' onClick={handleAddParameter} className='w-full'>
+                      <Plus className='mr-2 h-4 w-4' /> Add Variable
                     </Button>
-                    <div className='grid w-full items-center gap-1.5'>
-                      <Label htmlFor={`param-key-${index}`}>
-                        Key
-                        <span className='text-xs text-muted-foreground ml-1'>[e.g: variable.$]</span>
-                      </Label>
-                      <div className='flex items-center gap-1'>
-                        <Input
-                          id={`param-key-${index}`}
-                          placeholder='Key'
-                          value={paramKey}
-                          onChange={(e) => handleParameterChange(index, 'key', e.target.value)}
-                          className='font-mono text-xs flex-1'
-                        />
-                        <PlaceholderPicker
-                          placeholders={availablePlaceholders}
-                          onSelect={(placeholder) => handleParameterChange(index, 'key', paramKey + placeholder)}
-                          buttonSize='sm'
-                          disabled={availablePlaceholders.length === 0}
-                        />
-                      </div>
-                    </div>
-                    <div className='grid w-full items-center gap-1.5'>
-                      <Label htmlFor={`param-value-${index}`}>Value</Label>
-                      <Textarea
-                        id={`param-value-${index}`}
-                        placeholder='Value'
-                        value={
-                          typeof data.Parameters[paramKey] === 'string'
-                            ? data.Parameters[paramKey]
-                            : JSON.stringify(data.Parameters[paramKey], null, 2)
-                        }
-                        onChange={(e) => handleParameterChange(index, 'value', e.target.value)}
-                        className='font-mono text-xs'
-                        rows={1}
-                      />
-                    </div>
                   </div>
-                ))}
-              <Button variant='outline' size='sm' onClick={handleAddParameter} className='w-full'>
-                <Plus className='mr-2 h-4 w-4' /> Add Parameter
-              </Button>
-            </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </div>
         </>
       )}
+
+      {renderActionDefinition?.()}
 
       <div className='grid w-full items-center gap-1.5'>
         <Label htmlFor='result-path'>Result Path</Label>

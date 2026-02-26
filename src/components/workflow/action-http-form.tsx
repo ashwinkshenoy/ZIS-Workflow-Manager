@@ -15,13 +15,17 @@ import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 type ActionHttpFormProps = {
   data: ZISActionHttp['properties'];
   onChange: (updatedData: ZISActionHttp['properties']) => void;
+  /** When true, hides the Name input field (used when action name is selected elsewhere) */
+  hideNameField?: boolean;
+  /** When true, shows the "Definition" section header (used when opened in sheet, not when embedded) */
+  showDefinitionHeader?: boolean;
 };
 
 type EndpointType = 'path' | 'url';
 type BodyType = 'json' | 'path';
 const httpMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 
-export function ActionHttpForm({ data, onChange }: ActionHttpFormProps) {
+export function ActionHttpForm({ data, onChange, hideNameField = false, showDefinitionHeader = true }: ActionHttpFormProps) {
   const definition = data.definition || {};
 
   // Local state for debounced inputs
@@ -250,14 +254,17 @@ export function ActionHttpForm({ data, onChange }: ActionHttpFormProps) {
 
   return (
     <div className='space-y-4'>
-      <div className='grid w-full items-center gap-1.5'>
-        <Label htmlFor='action-name'>Name</Label>
-        <Input id='action-name' value={localName} onChange={(e) => handleNameChange(e.target.value)} />
-      </div>
+      {!hideNameField && (
+        <>
+          <div className='grid w-full items-center gap-1.5'>
+            <Label htmlFor='action-name'>Name</Label>
+            <Input id='action-name' value={localName} onChange={(e) => handleNameChange(e.target.value)} />
+          </div>
+          <Separator />
+        </>
+      )}
 
-      <Separator />
-
-      <h4 className='font-medium text-base pt-2'>Definition</h4>
+      {showDefinitionHeader && <h4 className='font-medium text-base pt-2'>Definition</h4>}
 
       <div className='p-4 rounded-md border bg-muted/50 space-y-4'>
         <div className='grid w-full items-center gap-1.5'>

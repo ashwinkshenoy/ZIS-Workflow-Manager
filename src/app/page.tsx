@@ -912,6 +912,11 @@ export default function Home() {
         onClose={() => handleNodeSelect(null)}
         onNodeChange={handleNodeChange}
         onNodeIdUpdate={handleNodeIdUpdate}
+        actionUsage={actionUsage}
+        onActionUpdate={handleActionUpdate}
+        onActionAdd={handleActionAdd}
+        onActionDelete={handleActionDelete}
+        onActionRename={handleActionRename}
       />
       <ActionsSidebar
         isOpen={isActionsSidebarOpen}

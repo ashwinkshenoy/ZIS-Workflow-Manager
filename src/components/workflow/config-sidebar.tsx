@@ -18,6 +18,7 @@ import { GenericForm } from './generic-form';
 import { GripVertical, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ActionNodeForm } from './action-node-form';
+import { ActionHttpForm } from './action-http-form';
 import { PassNodeForm } from './pass-node-form';
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 import { RecipeDataSheet } from './recipe-data-sheet';
@@ -33,6 +34,11 @@ type ConfigSidebarProps = {
   onClose: () => void;
   onNodeChange: (nodeId: string, updatedData: Partial<ZISState>) => void;
   onNodeIdUpdate: (oldId: string, newId: string) => void;
+  actionUsage?: Record<string, number>;
+  onActionUpdate?: (actionId: string, updatedAction: ZISResource) => void;
+  onActionAdd?: (actionId: string, actionType: 'ZIS::Action::Http') => void;
+  onActionDelete?: (actionId: string) => void;
+  onActionRename?: (oldActionId: string, newActionId: string) => boolean;
 };
 
 export function ConfigSidebar({
@@ -45,6 +51,11 @@ export function ConfigSidebar({
   onClose,
   onNodeChange,
   onNodeIdUpdate,
+  actionUsage = {},
+  onActionUpdate,
+  onActionAdd,
+  onActionDelete,
+  onActionRename,
 }: ConfigSidebarProps) {
   const [nodeId, setNodeId] = useState('');
   const [rawJson, setRawJson] = useState('');
@@ -175,6 +186,33 @@ export function ConfigSidebar({
 
   const shouldRenderGenericResultPath = hasResultPath && !isPassNode && !isActionNode;
 
+  // For action nodes: derive the action key for inline definition editing
+  const actionNameKey = formData?.ActionName?.startsWith('zis:common:')
+    ? null
+    : formData?.ActionName?.split(':').pop() || null;
+  const selectedActionResource = actionNameKey && actions[actionNameKey] ? actions[actionNameKey] : null;
+  const isCustomActionWithDefinition =
+    isActionNode && actionNameKey && selectedActionResource?.type === 'ZIS::Action::Http';
+
+  const handleActionFormChange = (updatedProperties: any) => {
+    if (!actionNameKey || !selectedActionResource || !onActionUpdate || !onActionRename) return;
+
+    const oldName = selectedActionResource.properties?.name || actionNameKey;
+    const newName = updatedProperties.name;
+
+    if (newName && newName !== actionNameKey) {
+      const renameSuccess = onActionRename(actionNameKey, newName);
+      if (renameSuccess) return;
+      updatedProperties.name = actionNameKey;
+    }
+
+    const updatedAction = {
+      ...selectedActionResource,
+      properties: updatedProperties,
+    };
+    onActionUpdate(actionNameKey, updatedAction);
+  };
+
   return (
     <>
       <Sheet open={isOpen} onOpenChange={onClose}>
@@ -227,7 +265,40 @@ export function ConfigSidebar({
 
                   <GenericForm data={formData} onChange={handleFormChange} />
 
-                  {isActionNode && <ActionNodeForm data={formData} actions={actions} onChange={handleFormChange} />}
+                  {isActionNode && (
+                    <ActionNodeForm
+                      data={formData}
+                      actions={actions}
+                      onChange={handleFormChange}
+                      showActionDefinitionInline={isCustomActionWithDefinition}
+                      renderActionDefinition={
+                        isCustomActionWithDefinition && selectedActionResource && onActionUpdate
+                          ? () => (
+                              <>
+                                <Separator />
+                                <div className='rounded-lg border bg-muted/40 p-4'>
+                                  <Accordion type='single' collapsible defaultValue='action-definition' className='w-full'>
+                                    <AccordionItem value='action-definition' className='border-none'>
+                                      <AccordionTrigger className='hover:no-underline py-2'>
+                                        <span className='text-base font-medium'>API / Action Definition</span>
+                                      </AccordionTrigger>
+                                      <AccordionContent className='pt-2'>
+                                        <ActionHttpForm
+                                          data={selectedActionResource.properties}
+                                          onChange={handleActionFormChange}
+                                          hideNameField
+                                          showDefinitionHeader={false}
+                                        />
+                                      </AccordionContent>
+                                    </AccordionItem>
+                                  </Accordion>
+                                </div>
+                              </>
+                            )
+                          : undefined
+                      }
+                    />
+                  )}
 
                   {isPassNode && <PassNodeForm data={formData} onChange={handleFormChange} />}
 
