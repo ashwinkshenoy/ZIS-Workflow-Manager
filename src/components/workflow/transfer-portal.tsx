@@ -285,7 +285,7 @@ export function TransferPortal({ isOpen, onClose, workflow, onWorkflowUpdate }: 
                   <div className='flex-1'>
                     <h4 className='text-sm font-medium mb-1'>How it works</h4>
                     <ul className='list-disc list-inside text-sm text-muted-foreground'>
-                      <li>Open this app in second browser tab.</li>
+                      <li>Open this app in second browser tab of a different zendesk instance.</li>
                       <li>Make sure you have an Active Integration created/selected in both tabs.</li>
                       <li>Click "Transfer" button in one tab to transfer the ZIS bundle and Configuration.</li>
                       <li>Second tab with the Transfer Portal open will receive the ZIS data.</li>
@@ -302,7 +302,7 @@ export function TransferPortal({ isOpen, onClose, workflow, onWorkflowUpdate }: 
                     <Send className='h-5 w-5 text-green-500' />
                   </div>
                   <div>
-                    <p className='text-sm font-medium'>Ready to broadcast</p>
+                    <p className='text-sm font-medium'>Ready to transfer</p>
                     <p className='text-xs text-muted-foreground'></p>
                   </div>
                 </div>
